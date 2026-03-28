@@ -19,7 +19,7 @@ export interface Session {
   desc: string;
   note?: string;
   messages: Message[];
-  createdAt: string;
+  created_at: string;
 }
 
 export interface Task {
@@ -29,7 +29,7 @@ export interface Task {
   progress: number;
   date: string;
   completed: boolean;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface Source {
@@ -38,7 +38,7 @@ export interface Source {
   type: string;
   cat: string;
   source: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface TimelineEvent {
@@ -48,7 +48,7 @@ export interface TimelineEvent {
   desc: string;
   status: string;
   color: string;
-  createdAt: string;
+  created_at: string;
 }
 
 interface AppContextType {
@@ -84,7 +84,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const fetchSupabaseData = async () => {
     try {
       const fetchTable = async (table: string, setter: any) => {
-        const { data, error } = await supabase.from(table).select('*').order('createdAt', { ascending: false });
+        const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
         if (!error && data) setter(data);
       };
 
@@ -139,7 +139,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       desc: note || "Nouvelle session de recherche initiée.",
       note,
       messages: [],
-      createdAt: now.toISOString()
+      created_at: now.toISOString()
     };
     
     // Optimistic update
@@ -149,9 +149,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     try { 
       const { error } = await supabase.from('sessions').insert([newSession]); 
-      if (error) throw error;
-    } catch (e) { 
-      console.error("Error adding session to Supabase:", e); 
+      if (error) {
+        console.error("Supabase Insert Error (Sessions):", error.message, error.details, error.hint);
+        throw error;
+      }
+    } catch (e: any) { 
+      console.error("Error adding session to Supabase:", e.message || e); 
     }
   };
 
@@ -165,7 +168,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addTask = async (title: string, tag: string, date: string) => {
-    const newTask: Task = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, tag, progress: 0, date, completed: false, createdAt: new Date().toISOString() };
+    const newTask: Task = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, tag, progress: 0, date, completed: false, created_at: new Date().toISOString() };
     setTasks(prev => [newTask, ...prev]);
     try { await supabase.from('tasks').insert([newTask]); } catch (e) { console.error(e); }
   };
@@ -191,14 +194,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       type, 
       cat, 
       source, 
-      createdAt: new Date().toISOString() 
+      created_at: new Date().toISOString() 
     };
     setSources(prev => [newSource, ...prev]);
     try { 
       const { error } = await supabase.from('sources').insert([newSource]); 
-      if (error) throw error;
-    } catch (e) { 
-      console.error("Error adding source to Supabase:", e); 
+      if (error) {
+        console.error("Supabase Insert Error (Sources):", error.message, error.details, error.hint);
+        throw error;
+      }
+    } catch (e: any) { 
+      console.error("Error adding source to Supabase:", e.message || e); 
     }
   };
 
@@ -208,7 +214,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addEvent = async (title: string, date: string, desc: string, status: string, color: string) => {
-    const newEvent: TimelineEvent = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, date, desc, status, color, createdAt: new Date().toISOString() };
+    const newEvent: TimelineEvent = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, date, desc, status, color, created_at: new Date().toISOString() };
     setEvents(prev => [newEvent, ...prev]);
     try { await supabase.from('events').insert([newEvent]); } catch (e) { console.error(e); }
   };
