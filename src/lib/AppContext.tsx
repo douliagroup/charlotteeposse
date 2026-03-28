@@ -131,6 +131,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addSession = async (title: string, note: string) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+    const welcomeMsg: Message = {
+      id: `welcome-${Date.now()}`,
+      text: "Bonjour Docteur Eposse. Je suis DouliaMed, votre assistant de recherche d'élite. Je peux vous aider dans vos travaux de recherche, l'analyse de documents médicaux, la gestion de votre chronogramme d'agrégation et la rédaction scientifique. Comment puis-je vous accompagner aujourd'hui ?",
+      sender: 'ai',
+      timestamp: now.toISOString()
+    };
+
     const newSession: Session = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       title,
@@ -138,7 +145,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       date: dateStr,
       desc: note || "Nouvelle session de recherche initiée.",
       note,
-      messages: [],
+      messages: [welcomeMsg],
       created_at: now.toISOString()
     };
     
@@ -153,6 +160,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.error("Supabase Insert Error (Sessions):", error.message, error.details, error.hint);
         throw error;
       }
+      console.log("Supabase Insert Success (Sessions):", newSession.id);
     } catch (e: any) { 
       console.error("Error adding session to Supabase:", e.message || e); 
     }
@@ -170,7 +178,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addTask = async (title: string, tag: string, date: string) => {
     const newTask: Task = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, tag, progress: 0, date, completed: false, created_at: new Date().toISOString() };
     setTasks(prev => [newTask, ...prev]);
-    try { await supabase.from('tasks').insert([newTask]); } catch (e) { console.error(e); }
+    try { 
+      const { error } = await supabase.from('tasks').insert([newTask]); 
+      if (error) {
+        console.error("Supabase Insert Error (Tasks):", error.message, error.details, error.hint);
+        throw error;
+      }
+      console.log("Supabase Insert Success (Tasks):", newTask.id);
+    } catch (e: any) { 
+      console.error("Error adding task to Supabase:", e.message || e); 
+    }
   };
 
   const toggleTask = async (id: string) => {
@@ -203,6 +220,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.error("Supabase Insert Error (Sources):", error.message, error.details, error.hint);
         throw error;
       }
+      console.log("Supabase Insert Success (Sources):", newSource.id);
     } catch (e: any) { 
       console.error("Error adding source to Supabase:", e.message || e); 
     }
@@ -216,7 +234,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addEvent = async (title: string, date: string, desc: string, status: string, color: string) => {
     const newEvent: TimelineEvent = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, date, desc, status, color, created_at: new Date().toISOString() };
     setEvents(prev => [newEvent, ...prev]);
-    try { await supabase.from('events').insert([newEvent]); } catch (e) { console.error(e); }
+    try { 
+      const { error } = await supabase.from('events').insert([newEvent]); 
+      if (error) {
+        console.error("Supabase Insert Error (Events):", error.message, error.details, error.hint);
+        throw error;
+      }
+      console.log("Supabase Insert Success (Events):", newEvent.id);
+    } catch (e: any) { 
+      console.error("Error adding event to Supabase:", e.message || e); 
+    }
   };
 
   return (

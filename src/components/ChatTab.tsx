@@ -87,6 +87,10 @@ export const ChatTab = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: currentInput,
+          history: activeSession?.messages.map(m => ({
+            role: m.sender === 'user' ? 'user' : 'model',
+            content: m.text
+          })) || [],
           sessionContext,
           sourcesContext,
           tasksContext,
@@ -122,20 +126,55 @@ export const ChatTab = () => {
     }
   };
 
+  const recognitionRef = useRef<any>(null);
+
   const handleSTT = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.warn("Votre navigateur ne supporte pas la reconnaissance vocale.");
       return;
     }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.lang = 'fr-FR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    
     recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInputValue(prev => prev + (prev ? ' ' : '') + transcript);
+    recognition.onend = () => {
+      // If we are still supposed to be listening, restart it
+      // This ensures it doesn't stop "tout seul"
+      if (isListening) {
+        recognition.start();
+      } else {
+        setIsListening(false);
+      }
     };
+    
+    recognition.onresult = (event: any) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        setInputValue(prev => prev + (prev ? ' ' : '') + finalTranscript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech Recognition Error:", event.error);
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
     recognition.start();
   };
 
