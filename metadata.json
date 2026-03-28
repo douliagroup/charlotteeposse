@@ -1,0 +1,5 @@
+{
+  "name": "DouliaMed",
+  "description": "Assistant médical IA et espace de travail académique pour le Dr. Charlotte Eposse.",
+  "requestFramePermissions": ["microphone"]
+}
