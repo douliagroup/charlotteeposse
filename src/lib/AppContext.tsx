@@ -159,14 +159,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
     const welcomeMsg: Message = {
-      id: `welcome-${Date.now()}`,
+      id: crypto.randomUUID(),
       text: "Bonjour Docteur Eposse. Je suis DouliaMed, votre assistant de recherche d'élite. Je peux vous aider dans vos travaux de recherche, l'analyse de documents médicaux, la gestion de votre chronogramme d'agrégation et la rédaction scientifique. Comment puis-je vous accompagner aujourd'hui ?",
       sender: 'ai',
       timestamp: now.toISOString()
     };
 
     const newSession: Session = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       title,
       tag: "RECHERCHE",
       date: dateStr,
@@ -231,7 +231,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addTask = async (title: string, tag: string, date: string) => {
-    const newTask: Task = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, tag, progress: 0, date, completed: false, created_at: new Date().toISOString() };
+    const newTask: Task = { id: crypto.randomUUID(), title, tag, progress: 0, date, completed: false, created_at: new Date().toISOString() };
     setTasks(prev => [newTask, ...prev]);
     try { 
       const { error } = await supabase.from('tasks').insert([newTask]); 
@@ -261,7 +261,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addSource = async (title: string, type: string, cat: string, source: string) => {
     const newSource: Source = { 
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
+      id: crypto.randomUUID(), 
       title, 
       type, 
       cat, 
@@ -287,7 +287,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addEvent = async (title: string, date: string, desc: string, status: string, color: string) => {
-    const newEvent: TimelineEvent = { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, title, date, desc, status, color, created_at: new Date().toISOString() };
+    const newEvent: TimelineEvent = { id: crypto.randomUUID(), title, date, desc, status, color, created_at: new Date().toISOString() };
     setEvents(prev => [newEvent, ...prev]);
     try { 
       const { error } = await supabase.from('events').insert([newEvent]); 
