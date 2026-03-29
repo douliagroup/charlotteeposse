@@ -85,7 +85,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       const fetchTable = async (table: string, setter: any) => {
         const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
-        if (!error && data) setter(data);
+        if (error) {
+          console.warn(`Error fetching ${table}:`, error.message);
+          return null;
+        }
+        if (data) setter(data);
         return data;
       };
 
