@@ -299,7 +299,7 @@ export const ChatTab = () => {
               className={cn("flex", msg.sender === 'ai' ? "justify-start" : "justify-end")}
             >
               <div className={cn(
-                "max-w-[75%] p-5 rounded-2xl shadow-sm relative group",
+                "max-w-[75%] p-5 rounded-2xl shadow-sm relative group font-sans",
                 msg.sender === 'ai' 
                   ? "bg-white border border-[#E8E5E0] text-[#1A1A1A] rounded-tl-none" 
                   : "bg-[#008080] text-white rounded-tr-none"

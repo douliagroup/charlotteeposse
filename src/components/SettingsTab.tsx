@@ -157,6 +157,40 @@ export const SettingsTab = () => {
               </>
             )}
           </button>
+
+          {/* User Guide Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-[#E6F2F2] rounded-xl flex items-center justify-center text-[#008080]">
+                <Globe size={20} />
+              </div>
+              <h3 className="font-bold text-[#1A1A1A]">Guide d&apos;utilisation DouliaMed</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-[#F5F4F0] rounded-2xl">
+                <p className="text-xs font-bold text-[#008080] mb-1">① Recherche Scientifique</p>
+                <p className="text-[11px] text-gray-600 leading-relaxed">Posez des questions précises sur des protocoles ou des pathologies. DouliaMed croise vos sources locales avec les données web les plus récentes.</p>
+              </div>
+              <div className="p-4 bg-[#F5F4F0] rounded-2xl">
+                <p className="text-xs font-bold text-[#008080] mb-1">② Analyse de Documents</p>
+                <p className="text-[11px] text-gray-600 leading-relaxed">Utilisez le bouton &quot;Téléverser&quot; pour soumettre des PDF ou images. DouliaMed peut résumer, extraire des données ou critiquer un article.</p>
+              </div>
+              <div className="p-4 bg-[#F5F4F0] rounded-2xl">
+                <p className="text-xs font-bold text-[#008080] mb-1">③ Dictée Vocale</p>
+                <p className="text-[11px] text-gray-600 leading-relaxed">Activez le micro pour dicter vos pensées. Le mode est continu : il ne s&apos;arrête que lorsque vous cliquez à nouveau sur l&apos;icône.</p>
+              </div>
+              <div className="p-4 bg-[#F5F4F0] rounded-2xl">
+                <p className="text-xs font-bold text-[#008080] mb-1">④ Exportation PDF</p>
+                <p className="text-[11px] text-gray-600 leading-relaxed">Chaque réponse de l&apos;IA peut être exportée en PDF haute qualité pour vos archives ou vos publications.</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

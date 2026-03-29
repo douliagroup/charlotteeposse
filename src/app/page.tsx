@@ -17,6 +17,7 @@ import { Menu, X } from 'lucide-react';
 function AppContent() {
   const { activeTab, setActiveTab } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -68,8 +69,9 @@ function AppContent() {
       )}
 
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+        isSidebarCollapsed ? "lg:w-[80px]" : "lg:w-[240px]"
       )}>
         <Sidebar 
           activeTab={activeTab} 
@@ -77,6 +79,8 @@ function AppContent() {
             setActiveTab(tab);
             setIsSidebarOpen(false);
           }} 
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={setIsSidebarCollapsed}
         />
       </div>
       

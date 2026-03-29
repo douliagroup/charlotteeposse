@@ -169,10 +169,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addMessageToSession = async (sessionId: string, message: Message) => {
     setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, messages: [...s.messages, message] } : s));
     try {
-      const { data } = await supabase.from('sessions').select('messages').eq('id', sessionId).single();
-      const updatedMessages = [...(data?.messages || []), message];
-      await supabase.from('sessions').update({ messages: updatedMessages }).eq('id', sessionId);
-    } catch (e) { console.error(e); }
+      const { data: sessionData, error: fetchError } = await supabase.from('sessions').select('messages').eq('id', sessionId).single();
+      if (fetchError) {
+        console.error("ERREUR CRITIQUE SUPABASE FETCH (Messages):", fetchError.message, fetchError.details, fetchError.hint);
+        return;
+      }
+      
+      const updatedMessages = [...(sessionData?.messages || []), message];
+      const { data, error } = await supabase.from('sessions').update({ messages: updatedMessages }).eq('id', sessionId).select();
+      
+      if (error) {
+        console.error("ERREUR CRITIQUE SUPABASE UPDATE (Messages):", error.message, error.details, error.hint);
+      } else {
+        console.log("SUCCÈS SUPABASE : Message enregistré dans la session", data);
+      }
+    } catch (e: any) { 
+      console.error("Erreur inattendue lors de l'enregistrement du message:", e.message || e); 
+    }
   };
 
   const addTask = async (title: string, tag: string, date: string) => {

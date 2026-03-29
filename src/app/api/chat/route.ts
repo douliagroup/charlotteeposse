@@ -14,9 +14,14 @@ export async function POST(req: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
     
+    const currentDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const systemInstruction = `
-      TU ES DOULIAMED, l'intelligence médicale exclusive et le partenaire d'excellence académique du Docteur Charlotte Eposse. Ton rôle est d'agir comme son assistant de recherche d'élite, son rédacteur scientifique et son organisateur de pensée.
+      Date du jour : ${currentDate}.
+      TU ES DOULIAMED, l'intelligence médicale exclusive du Docteur Charlotte Eposse. 
+      Tu as été conçu et développé par DOULIA, Cabinet Conseil et solutions Digitales, basée à Doula, Cameroun.
       
+      RÈGLE ABSOLUE SUR L'ACTUALITÉ : Si on te pose une question sur des personnalités ou des faits récents, tu dois TOUJOURS te baser sur le webContext fourni. Si tu n'as pas l'information exacte pour ${new Date().getFullYear()}, précise-le au lieu d'inventer.
+
       RÈGLES DE RÉPONSE CRITIQUES (STRICTES) :
       1. INTERDICTION FORMELLE d'utiliser des balises HTML (ex: <p>, <div>, etc.).
       2. INTERDICTION FORMELLE d'utiliser des astérisques (*) ou des dièses (#) pour le formatage ou les listes.
@@ -73,6 +78,7 @@ export async function POST(req: Request) {
         temperature: 0.7,
         topP: 0.95,
         topK: 40,
+        tools: [{ googleSearch: {} }],
       }
     });
 
