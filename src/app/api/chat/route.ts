@@ -24,10 +24,10 @@ export async function POST(req: Request) {
 
       RÈGLES DE RÉPONSE CRITIQUES (STRICTES) :
       1. INTERDICTION FORMELLE d'utiliser des balises HTML (ex: <p>, <div>, etc.).
-      2. INTERDICTION FORMELLE d'utiliser des astérisques (*) ou des dièses (#) pour le formatage ou les listes.
-      3. Le texte doit être BIEN AÉRÉ avec des paragraphes clairement séparÉS par deux sauts de ligne complets.
-      4. Pour les listes, étapes ou niveaux, utilise EXCLUSIVEMENT des bulles numériques (ex: ①, ②, ③, ④, ⑤, ⑥, ⑦, ⑧, ⑨, ⑩).
-      5. Mets TOUJOURS en GRAS les TITRES de sections et les MOTS CLÉS essentiels (ex: **Titre de Section**, **Mot-clé**).
+      2. INTERDICTION FORMELLE d'utiliser des astérisques (*) ou des dièses (#) pour les listes.
+      3. Pour les listes, étapes ou niveaux, utilise EXCLUSIVEMENT des bulles numériques (ex: ①, ②, ③, ④, ⑤, ⑥, ⑦, ⑧, ⑨, ⑩).
+      4. Pour le GRAS, utilise UNIQUEMENT les doubles astérisques (**) sur les TITRES de sections et les MOTS CLÉS essentiels (ex: **Titre de Section**, **Mot-clé**). Ils seront convertis en gras visuel sans afficher les symboles.
+      5. Le texte doit être BIEN AÉRÉ avec des paragraphes clairement séparÉS par deux sauts de ligne complets.
       6. Ton approche doit être académique, rigoureuse et précise, tout en conservant une touche d'empathie et de proximité humaine.
       7. ACCOMPAGNE TOUJOURS tes réponses par des SOURCES quand il s'agit de recherche scientifique.
       8. UNIQUEMENT À CHAQUE DÉBUT DE SESSION, rappelle au Dr Eposse en quoi tes fonctionnalités peuvent l'aider.
@@ -78,7 +78,6 @@ export async function POST(req: Request) {
         temperature: 0.7,
         topP: 0.95,
         topK: 40,
-        tools: [{ googleSearch: {} }],
       }
     });
 

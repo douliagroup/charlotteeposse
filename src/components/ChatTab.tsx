@@ -16,8 +16,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from "jspdf";
 import { cn } from '@/lib/utils';
 import { useAppContext, Message } from '@/lib/AppContext';
-
 import { searchTavily } from '@/lib/tavilyClient';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export const ChatTab = () => {
   const { activeSessionId, sessions, addMessageToSession, sources, tasks } = useAppContext();
@@ -99,7 +100,10 @@ export const ChatTab = () => {
         })
       });
 
-      if (!apiResponse.ok) throw new Error("Erreur lors de l'appel API");
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json();
+        throw new Error(errorData.error || "Erreur lors de l'appel API");
+      }
       
       const data = await apiResponse.json();
 
@@ -111,11 +115,11 @@ export const ChatTab = () => {
       };
       
       await addMessageToSession(activeSessionId, aiMsg);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat Error:", error);
       const errorMsg: Message = { 
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
-        text: "Une erreur est survenue lors de l'analyse. Veuillez vérifier votre connexion ou le format du fichier.", 
+        text: `ERREUR : ${error.message || "Une erreur est survenue lors de l'analyse. Veuillez vérifier votre connexion ou le format du fichier."}`, 
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
@@ -304,7 +308,15 @@ export const ChatTab = () => {
                   ? "bg-white border border-[#E8E5E0] text-[#1A1A1A] rounded-tl-none" 
                   : "bg-[#008080] text-white rounded-tr-none"
               )}>
-                <p className="text-[13px] leading-relaxed whitespace-pre-wrap font-medium">{msg.text}</p>
+                <div className="text-[13px] leading-relaxed font-medium markdown-body">
+                  {msg.sender === 'ai' ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.text}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                  )}
+                </div>
                 
                 {msg.sender === 'ai' && (
                   <div className="mt-4 flex items-center gap-4 border-t border-[#F5F4F0] pt-3">
