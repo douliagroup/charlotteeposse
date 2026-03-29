@@ -28,15 +28,15 @@ export const TasksTab = () => {
   };
 
   return (
-    <div className="p-10 bg-[#F5F4F0] h-full overflow-y-auto">
-      <div className="flex items-center justify-between mb-10">
-        <div>
-          <h2 className="text-2xl font-bold text-[#1A1A1A]">Gestionnaire de Tâches</h2>
-          <p className="text-sm text-gray-400 font-medium">Suivez l&apos;avancement de vos projets de recherche et académiques</p>
+    <div className="p-4 md:p-10 bg-[#F5F4F0] h-full overflow-y-auto pb-24 md:pb-10">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 md:mb-10 gap-4">
+        <div className="mt-10 lg:mt-0">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">Gestionnaire de Tâches</h2>
+          <p className="text-xs md:text-sm text-gray-400 font-medium">Suivez l&apos;avancement de vos projets de recherche et académiques</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#1A1A1A] text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-black transition-all"
+          className="w-full md:w-auto bg-[#1A1A1A] text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-black/10"
         >
           <Plus size={18} /> Nouvelle tâche
         </button>
@@ -104,42 +104,42 @@ export const TasksTab = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
         {[
           { label: 'À FAIRE', value: tasks.filter(t => !t.completed).length.toString().padStart(2, '0'), icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50' },
           { label: 'EN COURS', value: tasks.filter(t => t.progress > 0 && t.progress < 100).length.toString().padStart(2, '0'), icon: Zap, color: 'text-[#008080]', bg: 'bg-[#E6F2F2]' },
           { label: 'TERMINÉES', value: tasks.filter(t => t.completed).length.toString().padStart(2, '0'), icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
           { label: 'URGENT', value: tasks.filter(t => !t.completed && (t.date.includes('DEMAIN') || t.date.includes('AVRIL'))).length.toString().padStart(2, '0'), icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-[32px] border border-[#E8E5E0] shadow-sm">
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4", stat.bg)}>
-              <stat.icon className={stat.color} size={24} />
+          <div key={i} className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm">
+            <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4", stat.bg)}>
+              <stat.icon className={stat.color} size={20} />
             </div>
-            <p className="text-3xl font-bold text-[#1A1A1A] mb-1">{stat.value}</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+            <p className="text-xl md:text-3xl font-bold text-[#1A1A1A] mb-1">{stat.value}</p>
+            <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-[32px] border border-[#E8E5E0] shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-[#F5F4F0] flex items-center justify-between">
-          <h3 className="font-bold text-base text-[#1A1A1A]">Tâches prioritaires</h3>
-          <button className="text-[#008080] text-xs font-bold hover:underline tracking-widest uppercase">VOIR TOUT</button>
+      <div className="bg-white rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm overflow-hidden">
+        <div className="p-5 md:p-8 border-b border-[#F5F4F0] flex items-center justify-between">
+          <h3 className="font-bold text-sm md:text-base text-[#1A1A1A]">Tâches prioritaires</h3>
+          <button className="text-[#008080] text-[10px] md:text-xs font-bold hover:underline tracking-widest uppercase">VOIR TOUT</button>
         </div>
         <div className="divide-y divide-[#F5F4F0]">
           {tasks.length === 0 ? (
-            <div className="p-20 text-center">
-              <p className="text-sm text-gray-400 font-medium italic">Aucune tâche enregistrée. Commencez par en créer une.</p>
+            <div className="p-10 md:p-20 text-center">
+              <p className="text-xs md:text-sm text-gray-400 font-medium italic">Aucune tâche enregistrée. Commencez par en créer une.</p>
             </div>
           ) : (
             tasks.map((task, i) => (
-              <div key={task.id} className={cn("p-8 hover:bg-[#F5F4F0]/30 transition-colors", task.completed && "opacity-60")}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4">
+              <div key={task.id} className={cn("p-5 md:p-8 hover:bg-[#F5F4F0]/30 transition-colors", task.completed && "opacity-60")}>
+                <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-3">
+                  <div className="flex items-start gap-3 md:gap-4">
                     <button 
                       onClick={() => toggleTask(task.id)}
                       className={cn(
-                        "mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                        "mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
                         task.completed ? "bg-[#008080] border-[#008080]" : "border-[#008080]"
                       )}
                     >
@@ -150,7 +150,7 @@ export const TasksTab = () => {
                       <span className="px-2 py-0.5 bg-[#E6F2F2] text-[#008080] text-[9px] font-bold rounded uppercase tracking-widest">{task.tag}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ÉCHÉANCE : {task.date}</span>
+                  <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">ÉCHÉANCE : {task.date}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex-1 h-2 bg-[#F5F4F0] rounded-full overflow-hidden">

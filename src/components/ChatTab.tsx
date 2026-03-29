@@ -21,7 +21,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export const ChatTab = () => {
-  const { activeSessionId, sessions, addMessageToSession, sources, tasks } = useAppContext();
+  const { activeSessionId, sessions, addMessageToSession, sources, tasks, setActiveTab } = useAppContext();
   const activeSession = sessions.find(s => s.id === activeSessionId);
   
   const [inputValue, setInputValue] = useState('');
@@ -245,7 +245,7 @@ export const ChatTab = () => {
         <h2 className="text-xl font-bold text-[#1A1A1A] mb-2">Aucune session active</h2>
         <p className="text-sm text-gray-400 max-w-xs mx-auto mb-8">Veuillez sélectionner une session existante ou en créer une nouvelle pour démarrer le chat.</p>
         <button 
-          onClick={() => {}} // This should ideally trigger the modal in SessionsTab, but for now we just guide the user
+          onClick={() => setActiveTab('sessions')}
           className="bg-[#008080] text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-black transition-all"
         >
           ALLER AUX SESSIONS

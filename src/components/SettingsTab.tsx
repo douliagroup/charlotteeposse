@@ -23,23 +23,23 @@ export const SettingsTab = () => {
   };
 
   return (
-    <div className="p-10 bg-[#F5F4F0] h-full overflow-y-auto">
-      <div className="mb-10">
-        <h2 className="text-2xl font-bold text-[#1A1A1A]">Paramètres</h2>
-        <p className="text-sm text-gray-400 font-medium">Gérez vos préférences et votre profil académique</p>
+    <div className="p-4 md:p-10 bg-[#F5F4F0] h-full overflow-y-auto pb-24 md:pb-10">
+      <div className="mb-6 md:mb-10 mt-10 lg:mt-0">
+        <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">Paramètres</h2>
+        <p className="text-xs md:text-sm text-gray-400 font-medium">Gérez vos préférences et votre profil académique</p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 max-w-5xl">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm"
+          className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm"
         >
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-6 md:mb-8">
             <div className="w-10 h-10 bg-[#E6F2F2] rounded-xl flex items-center justify-center text-[#008080]">
               <User size={20} />
             </div>
-            <h3 className="font-bold text-[#1A1A1A]">Profil Académique</h3>
+            <h3 className="font-bold text-sm md:text-base text-[#1A1A1A]">Profil Académique</h3>
           </div>
 
           <div className="space-y-6">
@@ -80,18 +80,18 @@ export const SettingsTab = () => {
           </div>
         </motion.div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 md:y-8">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm"
+            className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm"
           >
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
               <div className="w-10 h-10 bg-[#E6F2F2] rounded-xl flex items-center justify-center text-[#008080]">
                 <Bell size={20} />
               </div>
-              <h3 className="font-bold text-[#1A1A1A]">Préférences</h3>
+              <h3 className="font-bold text-sm md:text-base text-[#1A1A1A]">Préférences</h3>
             </div>
             
             <div className="flex items-center justify-between p-4 bg-[#F5F4F0] rounded-2xl">
@@ -118,13 +118,13 @@ export const SettingsTab = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm"
+            className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm"
           >
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6 md:mb-8">
               <div className="w-10 h-10 bg-[#E6F2F2] rounded-xl flex items-center justify-center text-[#008080]">
                 <Shield size={20} />
               </div>
-              <h3 className="font-bold text-[#1A1A1A]">Sécurité</h3>
+              <h3 className="font-bold text-sm md:text-base text-[#1A1A1A]">Sécurité</h3>
             </div>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4">Niveau de confidentialité</p>
             <div className="flex gap-2">
@@ -163,13 +163,13 @@ export const SettingsTab = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm"
+            className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm"
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-[#E6F2F2] rounded-xl flex items-center justify-center text-[#008080]">
                 <Globe size={20} />
               </div>
-              <h3 className="font-bold text-[#1A1A1A]">Guide d&apos;utilisation DouliaMed</h3>
+              <h3 className="font-bold text-sm md:text-base text-[#1A1A1A]">Guide d&apos;utilisation DouliaMed</h3>
             </div>
             
             <div className="space-y-4">

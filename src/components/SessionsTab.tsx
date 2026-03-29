@@ -35,21 +35,21 @@ export const SessionsTab = () => {
   );
 
   return (
-    <div className="p-10 bg-[#F5F4F0] h-full overflow-y-auto">
-      <div className="flex items-center justify-between mb-10">
-        <div>
-          <h2 className="text-2xl font-bold text-[#1A1A1A]">Sessions de Recherche</h2>
-          <p className="text-sm text-gray-400 font-medium">Retrouvez l&apos;historique de vos réflexions académiques</p>
+    <div className="p-4 md:p-10 bg-[#F5F4F0] h-full overflow-y-auto pb-24 md:pb-10">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 md:mb-10 gap-4">
+        <div className="mt-10 lg:mt-0">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">Sessions de Recherche</h2>
+          <p className="text-xs md:text-sm text-gray-400 font-medium">Retrouvez l&apos;historique de vos réflexions académiques</p>
         </div>
-        <div className="flex gap-4">
-          <div className="relative">
+        <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input 
               type="text" 
               placeholder="Rechercher..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white border border-[#E8E5E0] rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#008080] transition-all" 
+              className="w-full bg-white border border-[#E8E5E0] rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#008080] transition-all" 
             />
           </div>
           <button 
@@ -61,7 +61,7 @@ export const SessionsTab = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
         <AnimatePresence>
           {filteredSessions.map((session) => (
             <motion.div 
