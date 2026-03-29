@@ -47,10 +47,11 @@ interface SidebarProps {
 export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }: SidebarProps) => {
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Desktop & Mobile Sidebar */}
       <aside className={cn(
-        "hidden md:flex h-screen bg-white/10 backdrop-blur-2xl border-r border-[#008080]/10 flex-col shadow-2xl transition-all duration-300",
-        isCollapsed ? "w-[80px]" : "w-[240px]"
+        "flex h-screen bg-white/10 backdrop-blur-2xl border-r border-[#008080]/10 flex-col shadow-2xl transition-all duration-300",
+        isCollapsed ? "w-[80px]" : "w-[240px]",
+        "w-[240px] md:w-auto" // Ensure fixed width on mobile when open
       )}>
         {/* Header */}
         <div className={cn("p-5 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
@@ -64,29 +65,33 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
                 referrerPolicy="no-referrer"
               />
             </div>
-            {!isCollapsed && (
+            {(!isCollapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
               <div>
                 <h1 className="font-bold text-sm leading-tight text-[#1A1A1A]">DouliaMed</h1>
                 <p className="text-[10px] text-[#008080] font-bold uppercase tracking-wider">Assistant Médical</p>
               </div>
             )}
           </div>
-          {!isCollapsed && (
-            <button 
-              onClick={() => setIsCollapsed(true)}
-              className="text-gray-400 hover:text-[#008080] transition-colors"
-            >
-              <ChevronLeft size={18} />
-            </button>
-          )}
-          {isCollapsed && (
-            <button 
-              onClick={() => setIsCollapsed(false)}
-              className="absolute -right-3 top-7 w-6 h-6 bg-white border border-[#008080]/20 rounded-full flex items-center justify-center text-[#008080] shadow-sm z-50 hover:bg-[#008080] hover:text-white transition-all"
-            >
-              <Plus size={14} className="rotate-45" />
-            </button>
-          )}
+          
+          {/* Collapse toggle (Desktop only) */}
+          <div className="hidden md:block">
+            {!isCollapsed && (
+              <button 
+                onClick={() => setIsCollapsed(true)}
+                className="text-gray-400 hover:text-[#008080] transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+            {isCollapsed && (
+              <button 
+                onClick={() => setIsCollapsed(false)}
+                className="absolute -right-3 top-7 w-6 h-6 bg-white border border-[#008080]/20 rounded-full flex items-center justify-center text-[#008080] shadow-sm z-50 hover:bg-[#008080] hover:text-white transition-all"
+              >
+                <Plus size={14} className="rotate-45" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Action Button */}

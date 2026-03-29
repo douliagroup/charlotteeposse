@@ -63,11 +63,21 @@ export const ChatTab = () => {
     try {
       // Step 1: Web Research with Tavily
       let webContext = '';
-      if (currentInput.trim().length > 10) {
-        webContext = await searchTavily(currentInput);
+      if (currentInput.trim().length > 5) {
+        // Clean query for better search results
+        let searchQuery = currentInput.trim();
+        // Remove common test prefixes
+        searchQuery = searchQuery.replace(/test d'actualité\s*:\s*/gi, '');
+        // If it's very long, take the first 100 characters to avoid confusing Tavily
+        if (searchQuery.length > 200) {
+          searchQuery = searchQuery.substring(0, 200);
+        }
+        
+        setStatusMessage("DouliaMed effectue une veille scientifique et d'actualité...");
+        webContext = await searchTavily(searchQuery);
       }
 
-      setStatusMessage("DouliaMed analyse les données et prépare votre réponse...");
+      setStatusMessage("DouliaMed synthétise les données pour le Docteur Eposse...");
 
       // Step 2: Knowledge Base Context (RAG)
       const sourcesContext = sources.length > 0 

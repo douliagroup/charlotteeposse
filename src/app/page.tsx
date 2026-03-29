@@ -55,7 +55,7 @@ function AppContent() {
       {/* Mobile Menu Toggle */}
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-white rounded-xl border border-[#E8E5E0] shadow-sm text-[#008080]"
+        className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-white rounded-xl border border-[#E8E5E0] shadow-sm text-[#008080]"
       >
         {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -63,15 +63,15 @@ function AppContent() {
       {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
+          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out md:relative md:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-        isSidebarCollapsed ? "lg:w-[80px]" : "lg:w-[240px]"
+        isSidebarCollapsed ? "md:w-[80px]" : "md:w-[240px]"
       )}>
         <Sidebar 
           activeTab={activeTab} 
