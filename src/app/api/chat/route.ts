@@ -90,7 +90,6 @@ export async function POST(req: Request) {
             temperature: 0.7,
             topP: 0.95,
             topK: 40,
-            tools: [{ googleSearch: {} }]
           }
         });
         break; // Success

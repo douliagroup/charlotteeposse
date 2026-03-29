@@ -30,6 +30,7 @@ export const ChatTab = () => {
   const [attachedFile, setAttachedFile] = useState<{ name: string; data: string; mimeType: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -390,24 +391,33 @@ export const ChatTab = () => {
                 TÉLÉVERSER DOCUMENTS
               </button>
             )}
-            <div className="h-3 w-px bg-[#008080]/10"></div>
-            <p className="text-[9px] text-gray-400 font-medium italic">Gemini 3 Flash propulsé par DOULIA</p>
           </div>
 
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-start gap-2">
             <div className="relative flex-1">
-              <input 
-                type="text" 
+              <textarea 
+                ref={textareaRef}
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+                  }
+                }}
                 placeholder="Posez votre question médicale..." 
-                className="w-full bg-white/50 border border-[#008080]/10 rounded-xl py-2.5 px-4 pr-10 text-[13px] font-medium focus:ring-2 focus:ring-[#008080] outline-none transition-all placeholder:text-gray-400 shadow-inner"
+                rows={1}
+                className="w-full bg-white/50 border border-[#008080]/10 rounded-xl py-3 px-4 pr-10 text-[13px] font-medium focus:ring-2 focus:ring-[#008080] outline-none transition-all placeholder:text-gray-400 shadow-inner resize-none min-h-[46px] max-h-[300px] overflow-y-auto"
               />
               <button 
                 onClick={handleSTT}
                 className={cn(
-                  "absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-all",
+                  "absolute right-2.5 top-[13px] p-1 rounded-lg transition-all",
                   isListening ? "bg-red-500 text-white animate-pulse" : "text-gray-400 hover:text-[#008080] hover:bg-white"
                 )}
               >
@@ -415,9 +425,12 @@ export const ChatTab = () => {
               </button>
             </div>
             <button 
-              onClick={handleSend}
+              onClick={() => {
+                handleSend();
+                if (textareaRef.current) textareaRef.current.style.height = 'auto';
+              }}
               disabled={(!inputValue.trim() && !attachedFile) || isLoading}
-              className="bg-[#008080] text-white p-2.5 rounded-xl hover:bg-black transition-all shadow-lg shadow-[#008080]/20 disabled:opacity-50 disabled:shadow-none min-w-[42px] flex items-center justify-center"
+              className="bg-[#008080] text-white p-3 rounded-xl hover:bg-black transition-all shadow-lg shadow-[#008080]/20 disabled:opacity-50 disabled:shadow-none min-w-[46px] flex items-center justify-center mt-0.5"
             >
               {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
