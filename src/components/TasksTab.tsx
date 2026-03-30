@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAppContext } from '@/lib/AppContext';
 
 export const TasksTab = () => {
-  const { tasks, addTask, toggleTask } = useAppContext();
+  const { tasks, addTask, toggleTask, deleteTask } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTag, setNewTaskTag] = useState('RECHERCHE');
@@ -147,7 +147,20 @@ export const TasksTab = () => {
                     </button>
                     <div>
                       <h4 className={cn("font-bold text-sm text-[#1A1A1A] mb-1", task.completed && "line-through")}>{task.title}</h4>
-                      <span className="px-2 py-0.5 bg-[#E6F2F2] text-[#008080] text-[9px] font-bold rounded uppercase tracking-widest">{task.tag}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-[#E6F2F2] text-[#008080] text-[9px] font-bold rounded uppercase tracking-widest">{task.tag}</span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Supprimer cette tâche ?')) {
+                              deleteTask(task.id);
+                            }
+                          }}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          <AlertCircle size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">ÉCHÉANCE : {task.date}</span>

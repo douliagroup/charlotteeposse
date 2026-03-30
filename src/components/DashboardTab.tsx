@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -35,6 +35,16 @@ const vizData = [
 
 export const DashboardTab = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
   const { tasks, sessions, setActiveSessionId } = useAppContext();
+  const [currentDate, setCurrentDate] = useState<string>('');
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString('fr-FR', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    }));
+  }, []);
 
   const urgentTasks = tasks
     .filter(t => !t.completed)
@@ -53,7 +63,9 @@ export const DashboardTab = ({ setActiveTab }: { setActiveTab: (tab: string) => 
     <div className="p-6 md:p-8 bg-[#F5F4F0] h-full overflow-y-auto">
       <div className="mb-8 md:mb-10 mt-12 lg:mt-0">
         <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">Tableau de bord</h2>
-        <p className="text-xs md:text-sm text-gray-400 font-medium">Bienvenue, Docteur Eposse. Voici un aperçu de vos activités.</p>
+        <p className="text-xs md:text-sm text-gray-400 font-medium">
+          Bienvenue, Docteur Eposse. {currentDate && `Nous sommes le ${currentDate}. `}Voici un aperçu de vos activités.
+        </p>
       </div>
 
       {/* Stats Summary */}

@@ -151,6 +151,10 @@ export const TimelineTab = () => {
               {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => <span key={`${d}-${i}`} className="text-[10px] font-bold text-gray-400">{d}</span>)}
             </div>
             <div className="grid grid-cols-7 gap-2 text-center">
+              {/* Empty slots for the start of the month (March 2026 starts on a Sunday) */}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
               {Array.from({ length: 31 }).map((_, i) => (
                 <div 
                   key={i} 

@@ -36,6 +36,7 @@ export async function POST(req: Request) {
       - Rédige des paragraphes élégants et directs qui s'écoutent comme un discours.
       - Sépare chaque grande idée par deux sauts de ligne complets (\n\n) pour imposer des pauses naturelles.
       - Utilise UNIQUEMENT le gras (**) pour souligner les mots-clés essentiels ou les titres de sections.
+      - Tu dois obligatoirement fournir tes sources de recherche sous forme de liens Markdown cliquables : [Nom de la source](URL).
       - Intègre les sources naturellement dans le récit plutôt que dans des blocs isolés.
       
       CONTEXTE (SUPABASE) :

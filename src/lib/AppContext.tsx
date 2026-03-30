@@ -62,6 +62,7 @@ interface AppContextType {
   tasks: Task[];
   addTask: (title: string, tag: string, date: string) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
   sources: Source[];
   addSource: (title: string, type: string, cat: string, source: string) => Promise<void>;
   deleteSource: (id: string) => Promise<void>;
@@ -97,7 +98,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fetchTable('sessions', setSessions),
         fetchTable('tasks', setTasks),
         fetchTable('sources', setSources),
-        fetchTable('events', setEvents)
+        fetchTable('chronogram', setEvents)
       ]);
 
       // Fetch messages separately
@@ -234,7 +235,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTask: Task = { id: crypto.randomUUID(), title, tag, progress: 0, date, completed: false, created_at: new Date().toISOString() };
     setTasks(prev => [newTask, ...prev]);
     try { 
-      const { error } = await supabase.from('tasks').insert([newTask]); 
+      const { error } = await supabase.from('tasks').insert([{
+        id: newTask.id,
+        title: newTask.title,
+        tag: newTask.tag,
+        progress: newTask.progress,
+        date: newTask.date,
+        is_completed: newTask.completed,
+        created_at: newTask.created_at
+      }]); 
       if (error) {
         console.error("Supabase Insert Error (Tasks):", error.message, error.details, error.hint);
         throw error;
@@ -255,7 +264,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return t;
     }));
     if (updated) {
-      try { await supabase.from('tasks').update({ completed: updated.completed, progress: updated.progress }).eq('id', id); } catch (e) { console.error(e); }
+      try { 
+        await supabase.from('tasks').update({ 
+          is_completed: updated.completed, 
+          progress: updated.progress 
+        }).eq('id', id); 
+      } catch (e) { 
+        console.error(e); 
+      }
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    try {
+      await supabase.from('tasks').delete().eq('id', id);
+    } catch (e) {
+      console.error("Error deleting task:", e);
     }
   };
 
@@ -290,12 +315,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newEvent: TimelineEvent = { id: crypto.randomUUID(), title, date, desc, status, color, created_at: new Date().toISOString() };
     setEvents(prev => [newEvent, ...prev]);
     try { 
-      const { error } = await supabase.from('events').insert([newEvent]); 
+      const { error } = await supabase.from('chronogram').insert([newEvent]); 
       if (error) {
-        console.error("Supabase Insert Error (Events):", error.message, error.details, error.hint);
+        console.error("Supabase Insert Error (Chronogram):", error.message, error.details, error.hint);
         throw error;
       }
-      console.log("Supabase Insert Success (Events):", newEvent.id);
+      console.log("Supabase Insert Success (Chronogram):", newEvent.id);
     } catch (e: any) { 
       console.error("Error adding event to Supabase:", e.message || e); 
     }
@@ -304,7 +329,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{ 
       activeTab, setActiveTab, sessions, activeSessionId, setActiveSessionId, addSession, addMessageToSession,
-      tasks, addTask, toggleTask, sources, addSource, deleteSource, events, addEvent, isLoading
+      tasks, addTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, isLoading
     }}>
       {children}
     </AppContext.Provider>
