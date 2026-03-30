@@ -35,15 +35,16 @@ export interface Task {
 export interface Source {
   id: string;
   title: string;
-  type: string;
-  cat: string;
-  source: string;
+  abstract: string;
+  url: string;
+  category: string;
   created_at: string;
 }
 
 export interface TimelineEvent {
   id: string;
   title: string;
+  activity: string;
   date: string;
   desc: string;
   status: string;
@@ -64,10 +65,10 @@ interface AppContextType {
   toggleTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   sources: Source[];
-  addSource: (title: string, type: string, cat: string, source: string) => Promise<void>;
+  addSource: (title: string, abstract: string, url: string, category: string) => Promise<void>;
   deleteSource: (id: string) => Promise<void>;
   events: TimelineEvent[];
-  addEvent: (title: string, date: string, desc: string, status: string, color: string) => Promise<void>;
+  addEvent: (title: string, activity: string, date: string, desc: string, status: string, color: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -291,13 +292,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addSource = async (title: string, type: string, cat: string, source: string) => {
+  const addSource = async (title: string, abstract: string, url: string, category: string) => {
     const newSource: Source = { 
       id: crypto.randomUUID(), 
       title, 
-      type, 
-      cat, 
-      source, 
+      abstract, 
+      url, 
+      category, 
       created_at: new Date().toISOString() 
     };
     setSources(prev => [newSource, ...prev]);
@@ -318,8 +319,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try { await supabase.from('sources').delete().eq('id', id); } catch (e) { console.error(e); }
   };
 
-  const addEvent = async (title: string, date: string, desc: string, status: string, color: string) => {
-    const newEvent: TimelineEvent = { id: crypto.randomUUID(), title, date, desc, status, color, created_at: new Date().toISOString() };
+  const addEvent = async (title: string, activity: string, date: string, desc: string, status: string, color: string) => {
+    const newEvent: TimelineEvent = { id: crypto.randomUUID(), title, activity, date, desc, status, color, created_at: new Date().toISOString() };
     setEvents(prev => [newEvent, ...prev]);
     try { 
       const { error } = await supabase.from('chronogram').insert([newEvent]); 
