@@ -82,7 +82,7 @@ export const ChatTab = () => {
 
       // Step 2: Knowledge Base Context (RAG)
       const sourcesContext = sources.length > 0 
-        ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${sources.map(s => `- ${s.title}: ${s.category}`).join('\n')}\n`
+        ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${sources.map(s => `- ${s.title}: ${s.source}`).join('\n')}\n`
         : '';
       
       const tasksContext = tasks.length > 0

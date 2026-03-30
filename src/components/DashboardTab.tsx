@@ -23,6 +23,11 @@ import {
   BookOpen
 } from 'lucide-react';
 
+const latestPublications = [
+  { title: 'New insights into the management of pediatric neuroblastoma', source: 'Journal of Clinical Oncology' },
+  { title: 'Impact of gut microbiome on early childhood development', source: 'Pediatrics International' },
+  { title: 'Advances in neonatal respiratory distress syndrome treatment', source: 'The Lancet Child & Adolescent Health' },
+];
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/lib/AppContext';
@@ -37,7 +42,7 @@ const vizData = [
 ];
 
 export const DashboardTab = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
-  const { tasks, sessions, setActiveSessionId, sources } = useAppContext();
+  const { tasks, sessions, setActiveSessionId } = useAppContext();
   const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
@@ -54,11 +59,6 @@ export const DashboardTab = ({ setActiveTab }: { setActiveTab: (tab: string) => 
     .slice(0, 2);
 
   const latestSessions = sessions.slice(0, 2);
-
-  const latestPublications = sources
-    .filter(s => s.category === 'VEILLE')
-    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-    .slice(0, 3);
 
   const currentMonthName = new Date().toLocaleDateString('fr-FR', { month: 'long' }).toUpperCase();
 
@@ -203,19 +203,15 @@ export const DashboardTab = ({ setActiveTab }: { setActiveTab: (tab: string) => 
             </div>
             <p className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-3">Dernières publications PubMed</p>
             <div className="space-y-3">
-              {latestPublications.length === 0 ? (
-                <p className="text-[8px] text-gray-400 italic">Aucune publication récente.</p>
-              ) : (
-                latestPublications.map((pub, i) => (
-                  <div key={i} onClick={() => setActiveTab('veille')} className="group cursor-pointer border-l-2 border-[#008080]/20 pl-3 hover:border-[#008080] transition-all">
-                    <p className="text-[9px] md:text-[10px] font-bold text-[#1A1A1A] line-clamp-2 group-hover:text-[#008080] transition-colors">{pub.title}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <BookOpen size={8} className="text-[#008080]" />
-                      <span className="text-[7px] md:text-[8px] text-gray-400 font-bold uppercase truncate">{pub.category}</span>
-                    </div>
+              {latestPublications.map((pub, i) => (
+                <div key={i} onClick={() => setActiveTab('veille')} className="group cursor-pointer border-l-2 border-[#008080]/20 pl-3 hover:border-[#008080] transition-all">
+                  <p className="text-[9px] md:text-[10px] font-bold text-[#1A1A1A] line-clamp-2 group-hover:text-[#008080] transition-colors">{pub.title}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <BookOpen size={8} className="text-[#008080]" />
+                    <span className="text-[7px] md:text-[8px] text-gray-400 font-bold uppercase truncate">{pub.source}</span>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
         </div>

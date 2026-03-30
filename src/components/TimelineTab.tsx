@@ -15,7 +15,6 @@ export const TimelineTab = () => {
   const [selectedDay, setSelectedDay] = useState(30);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newActivity, setNewActivity] = useState('');
   const [newDate, setNewDate] = useState('');
   const [newDesc, setNewDesc] = useState('');
 
@@ -23,14 +22,12 @@ export const TimelineTab = () => {
     if (!newTitle.trim()) return;
     await addEvent(
       newTitle,
-      newActivity || "RECHERCHE",
       newDate || "À DÉFINIR",
       newDesc || "Planification ajoutée au chronogramme stratégique.",
       "À VENIR",
       "bg-blue-400"
     );
     setNewTitle('');
-    setNewActivity('');
     setNewDate('');
     setNewDesc('');
     setIsModalOpen(false);
@@ -68,16 +65,6 @@ export const TimelineTab = () => {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ex: Soumission article..."
-                  className="w-full bg-[#F5F4F0] border-none rounded-2xl py-4 px-6 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">ACTIVITÉ / TYPE</label>
-                <input 
-                  type="text" 
-                  value={newActivity}
-                  onChange={(e) => setNewActivity(e.target.value)}
-                  placeholder="Ex: RECHERCHE, AGRÉGATION..."
                   className="w-full bg-[#F5F4F0] border-none rounded-2xl py-4 px-6 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
                 />
               </div>
