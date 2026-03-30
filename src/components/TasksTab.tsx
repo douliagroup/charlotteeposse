@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   Plus, 
   Clock, 
@@ -18,6 +19,8 @@ export const TasksTab = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTag, setNewTaskTag] = useState('RECHERCHE');
   const [newTaskDate, setNewTaskDate] = useState('');
+
+  const currentMonthName = new Date().toLocaleDateString('fr-FR', { month: 'long' }).toUpperCase();
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
@@ -81,7 +84,7 @@ export const TasksTab = () => {
                   type="text" 
                   value={newTaskDate}
                   onChange={(e) => setNewTaskDate(e.target.value)}
-                  placeholder="Ex: 15 AVRIL"
+                  placeholder={`Ex: 15 ${currentMonthName}`}
                   className="w-full bg-[#F5F4F0] border-none rounded-2xl py-4 px-6 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
                 />
               </div>
@@ -109,7 +112,7 @@ export const TasksTab = () => {
           { label: 'À FAIRE', value: tasks.filter(t => !t.completed).length.toString().padStart(2, '0'), icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50' },
           { label: 'EN COURS', value: tasks.filter(t => t.progress > 0 && t.progress < 100).length.toString().padStart(2, '0'), icon: Zap, color: 'text-[#008080]', bg: 'bg-[#E6F2F2]' },
           { label: 'TERMINÉES', value: tasks.filter(t => t.completed).length.toString().padStart(2, '0'), icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
-          { label: 'URGENT', value: tasks.filter(t => !t.completed && (t.date.includes('DEMAIN') || t.date.includes('AVRIL'))).length.toString().padStart(2, '0'), icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
+          { label: 'URGENT', value: tasks.filter(t => !t.completed && (t.date.includes('DEMAIN') || t.date.includes(currentMonthName))).length.toString().padStart(2, '0'), icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm">
             <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4", stat.bg)}>

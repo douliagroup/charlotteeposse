@@ -321,7 +321,19 @@ export const ChatTab = () => {
               )}>
                 <div className="text-[13px] leading-relaxed font-medium markdown-body">
                   {msg.sender === 'ai' ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a 
+                            {...props} 
+                            className="text-blue-600 underline hover:text-blue-800 transition-colors font-bold" 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                          />
+                        )
+                      }}
+                    >
                       {msg.text}
                     </ReactMarkdown>
                   ) : (
@@ -435,7 +447,6 @@ export const ChatTab = () => {
               {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
-          <p className="text-center mt-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">propulsé par doulia</p>
         </div>
       </div>
     </div>

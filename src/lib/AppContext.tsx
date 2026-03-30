@@ -90,10 +90,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           console.warn(`Error fetching ${table}:`, error.message);
           return null;
         }
-        if (data) setter(data);
+        
+        if (data) {
+          if (table === 'tasks') {
+            const mappedTasks = data.map((t: any) => ({
+              ...t,
+              completed: t.is_completed ?? t.completed ?? false
+            }));
+            setter(mappedTasks);
+          } else {
+            setter(data);
+          }
+        }
         return data;
       };
 
+      console.log("Démarrage de la synchronisation Supabase...");
       const [sessionsData] = await Promise.all([
         fetchTable('sessions', setSessions),
         fetchTable('tasks', setTasks),

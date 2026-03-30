@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   Calendar as CalendarIcon, 
   Zap,
@@ -12,7 +13,14 @@ import { useAppContext } from '@/lib/AppContext';
 
 export const TimelineTab = () => {
   const { events, addEvent } = useAppContext();
-  const [selectedDay, setSelectedDay] = useState(27);
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const today = now.getDate();
+
+  const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
+  
+  const [selectedDay, setSelectedDay] = useState(today);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
@@ -74,7 +82,7 @@ export const TimelineTab = () => {
                   type="text" 
                   value={newDate}
                   onChange={(e) => setNewDate(e.target.value)}
-                  placeholder="Ex: 15 MARS"
+                  placeholder={`Ex: 15 ${monthNames[currentMonth]}`}
                   className="w-full bg-[#F5F4F0] border-none rounded-2xl py-4 px-6 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
                 />
               </div>
@@ -144,18 +152,18 @@ export const TimelineTab = () => {
           <div className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <button className="text-gray-400 hover:text-[#1A1A1A]">{'<'}</button>
-              <p className="text-sm font-bold text-[#1A1A1A] uppercase tracking-widest">MARS 2026</p>
+              <p className="text-sm font-bold text-[#1A1A1A] uppercase tracking-widest">{monthNames[currentMonth]} {currentYear}</p>
               <button className="text-gray-400 hover:text-[#1A1A1A]">{'>'}</button>
             </div>
             <div className="grid grid-cols-7 gap-2 text-center mb-4">
               {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => <span key={`${d}-${i}`} className="text-[10px] font-bold text-gray-400">{d}</span>)}
             </div>
             <div className="grid grid-cols-7 gap-2 text-center">
-              {/* Empty slots for the start of the month (March 2026 starts on a Sunday) */}
-              {Array.from({ length: 6 }).map((_, i) => (
+              {/* Empty slots for the start of the month */}
+              {Array.from({ length: new Date(currentYear, currentMonth, 1).getDay() === 0 ? 6 : new Date(currentYear, currentMonth, 1).getDay() - 1 }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
-              {Array.from({ length: 31 }).map((_, i) => (
+              {Array.from({ length: new Date(currentYear, currentMonth + 1, 0).getDate() }).map((_, i) => (
                 <div 
                   key={i} 
                   onClick={() => setSelectedDay(i + 1)}
