@@ -90,25 +90,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           console.warn(`Error fetching ${table}:`, error.message);
           return null;
         }
-        
-        if (data) {
-          if (table === 'tasks') {
-            const mappedTasks = data.map((t: any) => ({
-              ...t,
-              completed: t.is_completed ?? t.completed ?? false
-            }));
-            setter(mappedTasks);
-          } else {
-            setter(data);
-          }
-        }
+        if (data) setter(data);
         return data;
       };
 
-      console.log("Démarrage de la synchronisation Supabase...");
       const [sessionsData] = await Promise.all([
         fetchTable('sessions', setSessions),
-        fetchTable('tasks', setTasks),
+        fetchTable('taches', setTasks),
         fetchTable('sources', setSources),
         fetchTable('chronogram', setEvents)
       ]);
@@ -247,14 +235,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTask: Task = { id: crypto.randomUUID(), title, tag, progress: 0, date, completed: false, created_at: new Date().toISOString() };
     setTasks(prev => [newTask, ...prev]);
     try { 
-      const { error } = await supabase.from('tasks').insert([{
+      const { error } = await supabase.from('taches').insert([{
         id: newTask.id,
         title: newTask.title,
-        tag: newTask.tag,
-        progress: newTask.progress,
-        date: newTask.date,
         is_completed: newTask.completed,
-        created_at: newTask.created_at
+        date: newTask.date
       }]); 
       if (error) {
         console.error("Supabase Insert Error (Tasks):", error.message, error.details, error.hint);
@@ -277,9 +262,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
     if (updated) {
       try { 
-        await supabase.from('tasks').update({ 
-          is_completed: updated.completed, 
-          progress: updated.progress 
+        await supabase.from('taches').update({ 
+          is_completed: updated.completed
         }).eq('id', id); 
       } catch (e) { 
         console.error(e); 
@@ -290,7 +274,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteTask = async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     try {
-      await supabase.from('tasks').delete().eq('id', id);
+      await supabase.from('taches').delete().eq('id', id);
     } catch (e) {
       console.error("Error deleting task:", e);
     }

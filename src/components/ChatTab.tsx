@@ -324,14 +324,7 @@ export const ChatTab = () => {
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        a: ({ node, ...props }) => (
-                          <a 
-                            {...props} 
-                            className="text-blue-600 underline hover:text-blue-800 transition-colors font-bold" 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                          />
-                        )
+                        a: ({ node, ...props }) => <a {...props} className="text-blue-600 underline hover:text-blue-800 transition-colors" target="_blank" rel="noopener noreferrer" />
                       }}
                     >
                       {msg.text}
@@ -447,6 +440,7 @@ export const ChatTab = () => {
               {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
+          <p className="text-center mt-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">propulsé par doulia</p>
         </div>
       </div>
     </div>
