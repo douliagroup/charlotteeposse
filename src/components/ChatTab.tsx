@@ -324,7 +324,12 @@ export const ChatTab = () => {
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        a: ({ node, ...props }) => <a {...props} className="text-blue-600 underline hover:text-blue-800 transition-colors" target="_blank" rel="noopener noreferrer" />
+                        a: ({ node, ...props }) => <a {...props} className="text-blue-600 underline hover:text-blue-800 transition-colors" target="_blank" rel="noopener noreferrer" />,
+                        table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table {...props} className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg" /></div>,
+                        thead: ({ node, ...props }) => <thead {...props} className="bg-gray-50" />,
+                        th: ({ node, ...props }) => <th {...props} className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b" />,
+                        td: ({ node, ...props }) => <td {...props} className="px-4 py-2 text-[11px] text-gray-700 border-b" />,
+                        tr: ({ node, ...props }) => <tr {...props} className="hover:bg-gray-50 transition-colors" />
                       }}
                     >
                       {msg.text}

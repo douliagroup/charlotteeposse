@@ -18,8 +18,16 @@ import {
   CheckCircle2, 
   AlertCircle,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  Microscope,
+  BookOpen
 } from 'lucide-react';
+
+const latestPublications = [
+  { title: 'New insights into the management of pediatric neuroblastoma', source: 'Journal of Clinical Oncology' },
+  { title: 'Impact of gut microbiome on early childhood development', source: 'Pediatrics International' },
+  { title: 'Advances in neonatal respiratory distress syndrome treatment', source: 'The Lancet Child & Adolescent Health' },
+];
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/lib/AppContext';
@@ -180,6 +188,31 @@ export const DashboardTab = ({ setActiveTab }: { setActiveTab: (tab: string) => 
               <MessageSquare size={10} />
               CONTINUER LE CHAT
             </button>
+          </div>
+
+          {/* Latest Publications (Veille Pédiatrique) */}
+          <div className="bg-white/60 backdrop-blur-sm p-4 md:p-5 rounded-[18px] md:rounded-[20px] border border-[#008080]/10 shadow-sm">
+            <div className="flex items-center justify-between mb-2 md:mb-3">
+              <div className="flex items-center gap-2">
+                <Microscope size={14} className="text-[#008080]" />
+                <h3 className="font-bold text-[10px] md:text-[11px] text-[#1A1A1A]">Veille Pédiatrique</h3>
+              </div>
+              <button onClick={() => setActiveTab('veille')} className="text-gray-400 hover:text-[#008080]">
+                <ArrowRight size={12} />
+              </button>
+            </div>
+            <p className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-3">Dernières publications PubMed</p>
+            <div className="space-y-3">
+              {latestPublications.map((pub, i) => (
+                <div key={i} onClick={() => setActiveTab('veille')} className="group cursor-pointer border-l-2 border-[#008080]/20 pl-3 hover:border-[#008080] transition-all">
+                  <p className="text-[9px] md:text-[10px] font-bold text-[#1A1A1A] line-clamp-2 group-hover:text-[#008080] transition-colors">{pub.title}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <BookOpen size={8} className="text-[#008080]" />
+                    <span className="text-[7px] md:text-[8px] text-gray-400 font-bold uppercase truncate">{pub.source}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

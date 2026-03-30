@@ -84,22 +84,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchSupabaseData = async () => {
     try {
-      const fetchTable = async (table: string, setter: any) => {
+      const fetchTable = async (table: string) => {
         const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
         if (error) {
           console.warn(`Error fetching ${table}:`, error.message);
           return null;
         }
-        if (data) setter(data);
         return data;
       };
 
-      const [sessionsData] = await Promise.all([
-        fetchTable('sessions', setSessions),
-        fetchTable('taches', setTasks),
-        fetchTable('sources', setSources),
-        fetchTable('chronogram', setEvents)
+      const [sessionsData, tasksData, sourcesData, eventsData] = await Promise.all([
+        fetchTable('sessions'),
+        fetchTable('taches'),
+        fetchTable('sources'),
+        fetchTable('chronogram')
       ]);
+
+      if (sessionsData) setSessions(sessionsData);
+      if (tasksData) {
+        const mappedTasks = tasksData.map((t: any) => ({
+          ...t,
+          completed: t.is_completed ?? false,
+          progress: t.is_completed ? 100 : 0
+        }));
+        setTasks(mappedTasks);
+      }
+      if (sourcesData) setSources(sourcesData);
+      if (eventsData) setEvents(eventsData);
 
       // Fetch messages separately
       const { data: messagesData, error: messagesError } = await supabase

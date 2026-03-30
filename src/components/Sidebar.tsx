@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   LogOut,
   Search,
-  LayoutDashboard
+  LayoutDashboard,
+  Microscope
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,7 @@ const navigation = [
   { id: 'sessions', name: 'Sessions', icon: Layers },
   { id: 'sources', name: 'Sources', icon: Library },
   { id: 'tasks', name: 'Tâches', icon: CheckSquare },
+  { id: 'veille', name: 'Veille Pédiatrique', icon: Microscope },
   { id: 'timeline', name: 'Chronogramme', icon: Calendar },
   { id: 'viz', name: 'Visualisation', icon: BarChart3 },
   { id: 'settings', name: 'Paramètres', icon: Settings },

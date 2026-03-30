@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       - Sépare chaque grande idée par deux sauts de ligne complets (\n\n) pour imposer des pauses naturelles.
       - Utilise UNIQUEMENT le gras (**) pour souligner les mots-clés essentiels ou les titres de sections.
       - Intègre les sources naturellement dans le récit en respectant le format demandé.
+      - FORMATAGE DES RÉPONSES (Tableaux) : Désormais, quand tu compares des données, des études ou des axes de recherche, tu DOIS utiliser des tableaux Markdown pour une lecture structurée.
       
       CONTEXTE (SUPABASE) :
       ${sessionContext || ""}

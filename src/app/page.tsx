@@ -10,6 +10,7 @@ import { SessionsTab } from '@/components/SessionsTab';
 import { SourcesTab } from '@/components/SourcesTab';
 import { TasksTab } from '@/components/TasksTab';
 import { TimelineTab } from '@/components/TimelineTab';
+import { VeilleTab } from '@/components/VeilleTab';
 import { VisualisationTab } from '@/components/VisualisationTab';
 import { SettingsTab } from '@/components/SettingsTab';
 import { Menu, X } from 'lucide-react';
@@ -31,6 +32,8 @@ function AppContent() {
         return <SourcesTab />;
       case 'tasks':
         return <TasksTab />;
+      case 'veille':
+        return <VeilleTab />;
       case 'timeline':
         return <TimelineTab />;
       case 'viz':
