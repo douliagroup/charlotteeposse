@@ -43,7 +43,13 @@ export const VeilleTab = () => {
 
       const ai = new GoogleGenAI({ apiKey });
       const prompt = `Traduis le titre et le résumé médical suivant en français. 
-      Le résumé doit être structuré sous forme de tableau Markdown pour une lecture rapide (Colonnes: Aspect, Détails).
+      
+      CONTRAINTES DE FORMATAGE STRICTES :
+      1. Utilise uniquement le GRAS (syntaxe __mot__) pour les titres de sections et les mots-clés essentiels.
+      2. Il est STRICTEMENT INTERDIT d'utiliser des astérisques (*), des dièses (#), des tirets (-) ou des listes à puces.
+      3. N'utilise AUCUNE balise HTML ou caractère spécial complexe.
+      4. Rédige des paragraphes fluides et élégants, optimisés pour la synthèse vocale (TTS).
+      5. Sépare chaque grande idée par deux sauts de ligne.
       
       TITRE: ${title}
       RÉSUMÉ: ${content}
@@ -51,7 +57,7 @@ export const VeilleTab = () => {
       Réponds UNIQUEMENT au format JSON:
       {
         "title": "Titre traduit",
-        "summary": "Résumé en tableau Markdown"
+        "summary": "Résumé formaté en texte fluide avec gras"
       }`;
 
       const response = await ai.models.generateContent({
@@ -120,26 +126,37 @@ export const VeilleTab = () => {
                 className="bg-white rounded-[32px] p-8 border border-[#E8E5E0] shadow-sm hover:shadow-md transition-all flex flex-col h-full"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-[#E6F2F2] text-[#008080] rounded-full text-[10px] font-bold uppercase tracking-widest">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-[#E6F2F2] text-[#008080] rounded-full text-[10px] font-bold uppercase tracking-widest border border-[#008080]/10">
                     <BookOpen size={12} />
                     {article.source_type}
                   </div>
-                  <span className="text-[10px] text-gray-400 font-bold">
-                    {new Date(article.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                      {new Date(article.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </span>
+                    {new Date(article.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                      <span className="text-[9px] text-[#008080] font-black uppercase tracking-widest mt-1">Nouveau</span>
+                    )}
+                  </div>
                 </div>
 
-                <h3 className="text-lg font-bold text-[#1A1A1A] mb-4 leading-tight">
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-6 leading-tight group-hover:text-[#008080] transition-colors">
                   {state.translatedTitle || article.title}
                 </h3>
 
-                <div className="text-sm text-gray-500 leading-relaxed font-medium mb-8 flex-1 markdown-body">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="h-[1px] flex-1 bg-[#E8E5E0]"></div>
+                  <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Synthèse</span>
+                  <div className="h-[1px] flex-1 bg-[#E8E5E0]"></div>
+                </div>
+
+                <div className="text-sm text-gray-600 leading-relaxed font-medium mb-8 flex-1 markdown-body">
                   {state.translatedSummary ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {state.translatedSummary}
                     </ReactMarkdown>
                   ) : (
-                    <p>{article.content}</p>
+                    <p className="line-clamp-6">{article.content}</p>
                   )}
                 </div>
 
@@ -148,26 +165,26 @@ export const VeilleTab = () => {
                     onClick={() => handleTranslate(article.id, article.title, article.content || "")}
                     disabled={state.isTranslating || !!state.translatedTitle}
                     className={cn(
-                      "flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest transition-all",
+                      "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-all px-4 py-2 rounded-xl",
                       state.translatedTitle 
-                        ? "text-green-500 cursor-default" 
-                        : "text-[#008080] hover:text-black"
+                        ? "text-green-600 bg-green-50" 
+                        : "text-[#008080] bg-[#E6F2F2] hover:bg-[#008080] hover:text-white"
                     )}
                   >
                     {state.isTranslating ? (
                       <>
-                        <Loader2 size={14} className="animate-spin" />
-                        TRADUCTION...
+                        <Loader2 size={12} className="animate-spin" />
+                        ANALYSE...
                       </>
                     ) : state.translatedTitle ? (
                       <>
-                        <Languages size={14} />
-                        TRADUIT EN FRANÇAIS
+                        <Languages size={12} />
+                        TRADUIT
                       </>
                     ) : (
                       <>
-                        <Languages size={14} />
-                        TRADUIRE EN FRANÇAIS
+                        <Languages size={12} />
+                        TRADUIRE
                       </>
                     )}
                   </button>
@@ -176,10 +193,10 @@ export const VeilleTab = () => {
                     href={article.file_path} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-[11px] font-bold text-gray-400 hover:text-[#1A1A1A] uppercase tracking-widest transition-all"
+                    className="flex items-center gap-2 text-[10px] font-bold text-white bg-[#1A1A1A] px-5 py-2 rounded-xl hover:bg-[#008080] uppercase tracking-widest transition-all shadow-lg shadow-black/5"
                   >
-                    SOURCE
-                    <ExternalLink size={14} />
+                    LIRE L&apos;ARTICLE
+                    <ExternalLink size={12} />
                   </a>
                 </div>
               </motion.div>

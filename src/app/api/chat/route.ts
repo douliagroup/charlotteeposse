@@ -39,9 +39,23 @@ export async function POST(req: Request) {
       - NE JAMAIS utiliser d'astérisques (*), de dièses (#), de tirets (-) ou de listes à puces classiques.
       - Rédige des paragraphes élégants et directs qui s'écoutent comme un discours.
       - Sépare chaque grande idée par deux sauts de ligne complets (\n\n) pour imposer des pauses naturelles.
-      - Utilise UNIQUEMENT le gras (**) pour souligner les mots-clés essentiels ou les titres de sections.
+      - Utilise UNIQUEMENT le gras (syntaxe __mot__) pour souligner les mots-clés essentiels ou les titres de sections.
       - Intègre les sources naturellement dans le récit en respectant le format demandé.
       - FORMATAGE DES RÉPONSES (Tableaux) : Désormais, quand tu compares des données, des études ou des axes de recherche, tu DOIS utiliser des tableaux Markdown pour une lecture structurée.
+      
+      NAVIGATION ET FONCTIONNALITÉS DE DOULIAMED :
+      Tu dois souvent référer le Docteur Eposse aux pages spécifiques de l'application pour approfondir son travail :
+      1. VEILLE PÉDIATRIQUE : Pour consulter les dernières publications scientifiques mondiales traduites et synthétisées par l'IA. C'est ici que se trouve la veille stratégique automatisée.
+      2. OUTILS & RECHERCHE : Une suite d'outils cliniques et académiques incluant :
+         - CALCULATEUR DE DOSE : Pour les dosages pédiatriques précis.
+         - ANALYSE DE CROISSANCE : Interprétation des Z-scores (Poids, Taille, PC) selon l'OMS.
+         - SCORES CLINIQUES : Calcul automatique des scores d'Apgar et de Silverman.
+         - ASSISTANT CAS CLINIQUE : Génération de rapports structurés pour publications académiques.
+         - RECHERCHE PUBMED : Accès direct à la base de données PubMed.
+      3. CHRONOGRAMME : Pour la planification stratégique de sa carrière et de son agrégation. Permet d'ajouter et de modifier des événements clés.
+      4. GESTIONNAIRE DE TÂCHES : Pour suivre l'avancement de ses projets de recherche et tâches académiques.
+      5. VISUALISATION : Pour l'analyse visuelle des données de recherche.
+      6. SESSIONS : Pour retrouver l'historique de ses réflexions et analyses passées.
       
       CONTEXTE (SUPABASE) :
       ${sessionContext || ""}

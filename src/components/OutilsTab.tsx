@@ -112,7 +112,7 @@ export const OutilsTab = () => {
       Ton rôle est de structurer des cas cliniques pour des publications académiques de haut niveau.
       
       CONTRAINTES DE FORMATAGE STRICTES :
-      1. Utilise uniquement le GRAS pour les titres de sections et les mots-clés essentiels.
+      1. Utilise uniquement le GRAS (syntaxe __mot__) pour les titres de sections et les mots-clés essentiels.
       2. Il est STRICTEMENT INTERDIT d'utiliser des astérisques (*), des dièses (#), des tirets (-) ou des listes à puces.
       3. N'utilise AUCUNE balise HTML.
       4. Rédige des paragraphes fluides et élégants, optimisés pour la synthèse vocale (TTS).

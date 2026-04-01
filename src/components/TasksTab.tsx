@@ -7,27 +7,52 @@ import {
   Clock, 
   Zap, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Edit
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/lib/AppContext';
 
 export const TasksTab = () => {
-  const { tasks, addTask, toggleTask, deleteTask } = useAppContext();
+  const { tasks, addTask, updateTask, toggleTask, deleteTask } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTag, setNewTaskTag] = useState('RECHERCHE');
   const [newTaskDate, setNewTaskDate] = useState('');
 
   const currentMonthName = new Date().toLocaleDateString('fr-FR', { month: 'long' }).toUpperCase();
 
-  const handleAddTask = async () => {
+  const handleOpenAddModal = () => {
+    setEditingTaskId(null);
+    setNewTaskTitle('');
+    setNewTaskTag('RECHERCHE');
+    setNewTaskDate('');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (task: any) => {
+    setEditingTaskId(task.id);
+    setNewTaskTitle(task.title);
+    setNewTaskTag(task.tag);
+    setNewTaskDate(task.date);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTask = async () => {
     if (!newTaskTitle.trim()) return;
-    await addTask(newTaskTitle, newTaskTag, newTaskDate || "À DÉFINIR");
+    
+    if (editingTaskId) {
+      await updateTask(editingTaskId, newTaskTitle, newTaskTag, newTaskDate || "À DÉFINIR");
+    } else {
+      await addTask(newTaskTitle, newTaskTag, newTaskDate || "À DÉFINIR");
+    }
+    
     setNewTaskTitle('');
     setNewTaskDate('');
     setIsModalOpen(false);
+    setEditingTaskId(null);
   };
 
   return (
@@ -38,14 +63,14 @@ export const TasksTab = () => {
           <p className="text-xs md:text-sm text-gray-400 font-medium">Suivez l&apos;avancement de vos projets de recherche et académiques</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenAddModal}
           className="w-full md:w-auto bg-[#1A1A1A] text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-black/10"
         >
           <Plus size={18} /> Nouvelle tâche
         </button>
       </div>
 
-      {/* Modal Ajout Tâche */}
+      {/* Modal Ajout/Modif Tâche */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
@@ -53,7 +78,7 @@ export const TasksTab = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl"
           >
-            <h3 className="text-xl font-bold text-[#1A1A1A] mb-6">Nouvelle Tâche</h3>
+            <h3 className="text-xl font-bold text-[#1A1A1A] mb-6">{editingTaskId ? 'Modifier la Tâche' : 'Nouvelle Tâche'}</h3>
             <div className="space-y-6">
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">INTITULÉ DE LA TÂCHE</label>
@@ -96,10 +121,10 @@ export const TasksTab = () => {
                   ANNULER
                 </button>
                 <button 
-                  onClick={handleAddTask}
+                  onClick={handleSaveTask}
                   className="flex-1 py-4 rounded-2xl text-sm font-bold bg-[#008080] text-white hover:bg-black transition-all"
                 >
-                  CRÉER
+                  {editingTaskId ? 'ENREGISTRER' : 'CRÉER'}
                 </button>
               </div>
             </div>
@@ -155,11 +180,22 @@ export const TasksTab = () => {
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
+                            handleOpenEditModal(task);
+                          }}
+                          className="text-[#008080] hover:text-black transition-colors p-1 bg-[#F5F4F0] rounded-md"
+                          title="Modifier"
+                        >
+                          <Edit size={12} />
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (confirm('Supprimer cette tâche ?')) {
                               deleteTask(task.id);
                             }
                           }}
-                          className="text-red-400 hover:text-red-600 transition-colors"
+                          className="text-red-400 hover:text-red-600 transition-colors p-1 bg-red-50 rounded-md"
+                          title="Supprimer"
                         >
                           <AlertCircle size={12} />
                         </button>

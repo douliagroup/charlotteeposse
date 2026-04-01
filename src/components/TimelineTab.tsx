@@ -4,14 +4,15 @@ import React, { useState } from 'react';
 import { 
   Calendar as CalendarIcon, 
   Zap,
-  Plus
+  Plus,
+  Edit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { useAppContext } from '@/lib/AppContext';
 
 export const TimelineTab = () => {
-  const { events, addEvent } = useAppContext();
+  const { events, addEvent, updateEvent } = useAppContext();
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -19,6 +20,7 @@ export const TimelineTab = () => {
 
   const [selectedDay, setSelectedDay] = useState(currentDay);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const [newDate, setNewDate] = useState('');
@@ -36,21 +38,57 @@ export const TimelineTab = () => {
     "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"
   ];
 
-  const handleAddEvent = async () => {
+  const handleOpenAddModal = () => {
+    setEditingEventId(null);
+    setNewTitle('');
+    setNewActivity('');
+    setNewDate('');
+    setNewDesc('');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (event: any) => {
+    setEditingEventId(event.id);
+    setNewTitle(event.title);
+    setNewActivity(event.activity || '');
+    setNewDate(event.date);
+    setNewDesc(event.desc);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveEvent = async () => {
     if (!newTitle.trim()) return;
-    await addEvent(
-      newTitle,
-      newActivity || "RECHERCHE",
-      newDate || "À DÉFINIR",
-      newDesc || "Planification ajoutée au chronogramme stratégique.",
-      "À VENIR",
-      "bg-blue-400"
-    );
+    
+    if (editingEventId) {
+      const event = events.find(e => e.id === editingEventId);
+      if (event) {
+        await updateEvent(
+          editingEventId,
+          newTitle,
+          newActivity || "RECHERCHE",
+          newDate || "À DÉFINIR",
+          newDesc || "Planification mise à jour.",
+          event.status,
+          event.color
+        );
+      }
+    } else {
+      await addEvent(
+        newTitle,
+        newActivity || "RECHERCHE",
+        newDate || "À DÉFINIR",
+        newDesc || "Planification ajoutée au chronogramme stratégique.",
+        "À VENIR",
+        "bg-blue-400"
+      );
+    }
+    
     setNewTitle('');
     setNewActivity('');
     setNewDate('');
     setNewDesc('');
     setIsModalOpen(false);
+    setEditingEventId(null);
   };
 
   return (
@@ -61,14 +99,14 @@ export const TimelineTab = () => {
           <p className="text-sm text-gray-400 font-medium">Planification stratégique vers l&apos;agrégation</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenAddModal}
           className="bg-[#1A1A1A] text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-black transition-all"
         >
           <Plus size={18} /> Ajouter un événement
         </button>
       </div>
 
-      {/* Modal Ajout Événement */}
+      {/* Modal Ajout/Modif Événement */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
@@ -76,7 +114,7 @@ export const TimelineTab = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl"
           >
-            <h3 className="text-xl font-bold text-[#1A1A1A] mb-6">Nouvel Événement</h3>
+            <h3 className="text-xl font-bold text-[#1A1A1A] mb-6">{editingEventId ? 'Modifier l\'Événement' : 'Nouvel Événement'}</h3>
             <div className="space-y-6">
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">TITRE</label>
@@ -125,10 +163,10 @@ export const TimelineTab = () => {
                   ANNULER
                 </button>
                 <button 
-                  onClick={handleAddEvent}
+                  onClick={handleSaveEvent}
                   className="flex-1 py-4 rounded-2xl text-sm font-bold bg-[#008080] text-white hover:bg-black transition-all"
                 >
-                  AJOUTER
+                  {editingEventId ? 'ENREGISTRER' : 'AJOUTER'}
                 </button>
               </div>
             </div>
@@ -148,12 +186,19 @@ export const TimelineTab = () => {
                 key={event.id} 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="relative pl-16"
+                className="relative pl-16 group"
               >
                 <div className={cn("absolute left-0 top-1 w-12 h-12 rounded-2xl flex items-center justify-center text-white z-10 shadow-lg", event.color)}>
                   <Zap size={20} />
                 </div>
-                <div className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm hover:shadow-md transition-all">
+                <div className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm hover:shadow-md transition-all relative">
+                  <button 
+                    onClick={() => handleOpenEditModal(event)}
+                    className="absolute top-8 right-8 p-2 bg-[#F5F4F0] rounded-xl text-[#008080] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#008080] hover:text-white"
+                    title="Modifier"
+                  >
+                    <Edit size={14} />
+                  </button>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-bold text-base text-[#1A1A1A] mb-1">{event.title}</h3>

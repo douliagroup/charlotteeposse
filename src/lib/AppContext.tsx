@@ -65,6 +65,7 @@ interface AppContextType {
   addMessageToSession: (sessionId: string, message: Message) => Promise<void>;
   tasks: Task[];
   addTask: (title: string, tag: string, date: string) => Promise<void>;
+  updateTask: (id: string, title: string, tag: string, date: string) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   sources: Source[];
@@ -72,6 +73,7 @@ interface AppContextType {
   deleteSource: (id: string) => Promise<void>;
   events: TimelineEvent[];
   addEvent: (title: string, activity: string, date: string, desc: string, status: string, color: string) => Promise<void>;
+  updateEvent: (id: string, title: string, activity: string, date: string, desc: string, status: string, color: string) => Promise<void>;
   isLoading: boolean;
   user: { email: string } | null;
   login: (email: string, pass: string) => boolean;
@@ -303,6 +305,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateTask = async (id: string, title: string, tag: string, date: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, title, tag, date } : t));
+    try {
+      const { error } = await supabase.from('taches').update({
+        title,
+        date
+      }).eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Error updating task:", e);
+    }
+  };
+
   const toggleTask = async (id: string) => {
     let updated: Task | undefined;
     setTasks(prev => prev.map(t => {
@@ -393,10 +408,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateEvent = async (id: string, title: string, activity: string, date: string, desc: string, status: string, color: string) => {
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, title, activity, date, desc, status, color } : e));
+    try {
+      const { error } = await supabase.from('chronogram').update({
+        activity: activity || title,
+        date,
+        notes: desc,
+        is_completed: status === "COMPLÉTÉ",
+        color
+      }).eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Error updating event:", e);
+    }
+  };
+
   return (
     <AppContext.Provider value={{ 
       activeTab, setActiveTab, sessions, activeSessionId, setActiveSessionId, addSession, addMessageToSession,
-      tasks, addTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, isLoading,
+      tasks, addTask, updateTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, updateEvent, isLoading,
       user, login, logout
     }}>
       {children}
