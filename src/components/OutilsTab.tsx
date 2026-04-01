@@ -108,7 +108,18 @@ export const OutilsTab = () => {
       if (!apiKey) throw new Error("Clé API manquante");
       const ai = new GoogleGenAI({ apiKey });
       
-      const prompt = `En tant qu'expert pédiatre, structure ce cas clinique pour une publication académique :
+      const systemInstruction = `Tu es un expert pédiatre et rédacteur scientifique d'élite. 
+      Ton rôle est de structurer des cas cliniques pour des publications académiques de haut niveau.
+      
+      CONTRAINTES DE FORMATAGE STRICTES :
+      1. Utilise uniquement le GRAS pour les titres de sections et les mots-clés essentiels.
+      2. Il est STRICTEMENT INTERDIT d'utiliser des astérisques (*), des dièses (#), des tirets (-) ou des listes à puces.
+      3. N'utilise AUCUNE balise HTML.
+      4. Rédige des paragraphes fluides et élégants, optimisés pour la synthèse vocale (TTS).
+      5. Sépare chaque grande section par deux sauts de ligne.
+      6. Le ton doit être académique, rigoureux et précis.`;
+
+      const prompt = `Structure ce cas clinique pour une publication académique :
       Âge : ${caseData.age}
       Sexe : ${caseData.sexe}
       Motif : ${caseData.motif}
@@ -116,12 +127,12 @@ export const OutilsTab = () => {
       Examen : ${caseData.examen}
       Hypothèses : ${caseData.hypotheses}
       
-      Formatte le rapport avec les sections suivantes : Titre, Résumé, Introduction, Présentation du Cas, Discussion, Conclusion. 
-      Utilise un ton scientifique de haut niveau en français.`;
+      Le rapport doit inclure les sections suivantes : Titre, Résumé, Introduction, Présentation du Cas, Discussion, Conclusion.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt
+        contents: prompt,
+        config: { systemInstruction }
       });
       
       setGeneratedCase(response.text || "Erreur de génération.");
