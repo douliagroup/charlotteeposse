@@ -114,12 +114,12 @@ export const TasksTab = () => {
           { label: 'TERMINÉES', value: tasks.filter(t => t.completed).length.toString().padStart(2, '0'), icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
           { label: 'URGENT', value: tasks.filter(t => !t.completed && (t.date.includes('DEMAIN') || t.date.includes(currentMonthName))).length.toString().padStart(2, '0'), icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-[#E8E5E0] shadow-sm">
-            <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4", stat.bg)}>
-              <stat.icon className={stat.color} size={20} />
+          <div key={i} className="bg-white p-3 md:p-4 rounded-xl md:rounded-[24px] border border-[#E8E5E0] shadow-sm">
+            <div className={cn("w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-3", stat.bg)}>
+              <stat.icon className={stat.color} size={16} />
             </div>
-            <p className="text-xl md:text-3xl font-bold text-[#1A1A1A] mb-1">{stat.value}</p>
-            <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+            <p className="text-lg md:text-2xl font-bold text-[#1A1A1A] mb-0.5">{stat.value}</p>
+            <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
           </div>
         ))}
       </div>

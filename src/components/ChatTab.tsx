@@ -82,7 +82,7 @@ export const ChatTab = () => {
 
       // Step 2: Knowledge Base Context (RAG)
       const sourcesContext = sources.length > 0 
-        ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${sources.map(s => `- ${s.title}: ${s.source}`).join('\n')}\n`
+        ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${sources.map(s => `- ${s.title}: ${s.cat}`).join('\n')}\n`
         : '';
       
       const tasksContext = tasks.length > 0
@@ -292,17 +292,17 @@ export const ChatTab = () => {
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5 scroll-smooth">
         {activeSession?.messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full opacity-30 grayscale">
-            <div className="w-24 h-24 rounded-full mb-4 overflow-hidden relative shadow-2xl">
+          <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+            <div className="w-28 h-28 rounded-[32px] mb-6 overflow-hidden relative shadow-2xl bg-white border border-[#008080]/10 p-4">
               <Image 
-                src="https://picsum.photos/seed/medical/200/200" 
+                src="https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png" 
                 alt="DouliaMed" 
                 fill
-                className="object-cover"
+                className="object-contain p-2"
                 referrerPolicy="no-referrer"
               />
             </div>
-            <p className="text-sm font-bold text-[#1A1A1A]">DouliaMed est prêt pour l&apos;analyse.</p>
+            <p className="text-sm font-bold text-[#1A1A1A] tracking-widest uppercase">DouliaMed est prêt pour l&apos;analyse.</p>
           </div>
         )}
         <AnimatePresence initial={false}>

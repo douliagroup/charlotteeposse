@@ -8,14 +8,14 @@
   "theme_color": "#008080",
   "icons": [
     {
-      "src": "https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg",
+      "src": "https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png"
     },
     {
-      "src": "https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg",
+      "src": "https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png"
     }
   ]
 }

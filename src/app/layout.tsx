@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     siteName: 'DouliaMed',
     images: [
       {
-        url: 'https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg',
+        url: 'https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png',
         width: 800,
         height: 800,
         alt: 'DouliaMed Logo',
@@ -28,11 +28,11 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'DouliaMed | Assistant Médical IA',
     description: 'Espace de travail académique et assistant IA pour le Dr. Charlotte Eposse.',
-    images: ['https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg'],
+    images: ['https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png'],
   },
   icons: {
-    icon: 'https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg',
-    apple: 'https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg',
+    icon: 'https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png',
+    apple: 'https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png',
   },
   manifest: '/manifest.json',
 };

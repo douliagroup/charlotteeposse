@@ -56,15 +56,25 @@ export const VisualisationTab = () => {
       if (!apiKey) throw new Error("Clé API manquante");
       const ai = new GoogleGenAI({ apiKey });
       
-      const prompt = `Analyse ces données biostatistiques et génère un résumé médical professionnel :
-      Données : ${JSON.stringify(vizData)}
-      Répartition : ${JSON.stringify(pieData)}
+      const systemInstruction = `Tu es un expert en biostatistique médicale et oncologie pédiatrique. 
+      Ton analyse doit être rigoureuse, académique et basée sur les standards internationaux (OMS, SIOP). 
+      Utilise un vocabulaire médical précis (p-value, intervalle de confiance, significativité statistique, etc.).`;
+
+      const prompt = `Analyse ces données biostatistiques issues de la recherche clinique du Docteur Eposse :
+      Données temporelles : ${JSON.stringify(vizData)}
+      Répartition pathologique : ${JSON.stringify(pieData)}
       
-      Le résumé doit être structuré, académique et en français.`;
+      Génère une interprétation scientifique détaillée incluant :
+      1. Une analyse des tendances observées.
+      2. Une interprétation de la significativité statistique (p-value simulée basée sur la cohérence des données).
+      3. Des recommandations cliniques basées sur ces résultats.
+      
+      Le rapport doit être structuré et rédigé en français académique.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt
+        contents: prompt,
+        config: { systemInstruction }
       });
       
       setBiostatsInterpretation(response.text || "Erreur d'analyse.");
@@ -85,14 +95,20 @@ export const VisualisationTab = () => {
       
       const base64Data = selectedImage.split(',')[1];
       
+      const systemInstruction = `Tu es un radiologue pédiatrique expert. 
+      Ton rôle est d'analyser les imageries médicales (Radio, Scanner, IRM) avec une précision académique. 
+      Identifie les structures anatomiques, les anomalies pathologiques (masses, opacités, fractures, etc.) et propose un diagnostic différentiel étayé.
+      Utilise la terminologie radiologique standard.`;
+
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: {
           parts: [
-            { text: "En tant qu'expert radiologue, analyse cette image médicale. Donne une interprétation précise, les signes cliniques visibles et tes recommandations. Réponds en français de manière concise et académique." },
+            { text: "Analyse cette imagerie médicale pédiatrique. Fournis une description sémiologique détaillée, les hypothèses diagnostiques et les examens complémentaires suggérés. Réponds en français académique." },
             { inlineData: { data: base64Data, mimeType: imageMimeType } }
           ]
-        }
+        },
+        config: { systemInstruction }
       });
       
       setAnalysisResult(response.text || "Désolé, je n'ai pas pu analyser cette image.");

@@ -9,6 +9,28 @@ export interface TavilyResponse {
   results: TavilySearchResult[];
 }
 
+export const searchTavilyRaw = async (query: string): Promise<TavilySearchResult[]> => {
+  try {
+    const response = await fetch('/api/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Tavily search failed: ${response.statusText}`);
+    }
+
+    const data: TavilyResponse = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error('Tavily Search Error:', error);
+    return [];
+  }
+};
+
 export const searchTavily = async (query: string): Promise<string> => {
   try {
     const response = await fetch('/api/search', {

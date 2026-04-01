@@ -12,22 +12,42 @@ import { useAppContext } from '@/lib/AppContext';
 
 export const TimelineTab = () => {
   const { events, addEvent } = useAppContext();
-  const [selectedDay, setSelectedDay] = useState(30);
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const currentDay = now.getDate();
+
+  const [selectedDay, setSelectedDay] = useState(currentDay);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newActivity, setNewActivity] = useState('');
   const [newDate, setNewDate] = useState('');
   const [newDesc, setNewDesc] = useState('');
+
+  // Calendar logic
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  // Adjust for Monday start (0=Sun, 1=Mon, ..., 6=Sat)
+  // If firstDayOfMonth is 0 (Sun), it should be 6. If 1 (Mon), it should be 0.
+  const emptySlots = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+
+  const monthNames = [
+    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"
+  ];
 
   const handleAddEvent = async () => {
     if (!newTitle.trim()) return;
     await addEvent(
       newTitle,
+      newActivity || "RECHERCHE",
       newDate || "À DÉFINIR",
       newDesc || "Planification ajoutée au chronogramme stratégique.",
       "À VENIR",
       "bg-blue-400"
     );
     setNewTitle('');
+    setNewActivity('');
     setNewDate('');
     setNewDesc('');
     setIsModalOpen(false);
@@ -65,6 +85,16 @@ export const TimelineTab = () => {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ex: Soumission article..."
+                  className="w-full bg-[#F5F4F0] border-none rounded-2xl py-4 px-6 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">ACTIVITÉ / TYPE</label>
+                <input 
+                  type="text" 
+                  value={newActivity}
+                  onChange={(e) => setNewActivity(e.target.value)}
+                  placeholder="Ex: RECHERCHE, AGRÉGATION..."
                   className="w-full bg-[#F5F4F0] border-none rounded-2xl py-4 px-6 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
                 />
               </div>
@@ -144,24 +174,25 @@ export const TimelineTab = () => {
           <div className="bg-white p-8 rounded-[32px] border border-[#E8E5E0] shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <button className="text-gray-400 hover:text-[#1A1A1A]">{'<'}</button>
-              <p className="text-sm font-bold text-[#1A1A1A] uppercase tracking-widest">MARS 2026</p>
+              <p className="text-sm font-bold text-[#1A1A1A] uppercase tracking-widest">{monthNames[currentMonth]} {currentYear}</p>
               <button className="text-gray-400 hover:text-[#1A1A1A]">{'>'}</button>
             </div>
             <div className="grid grid-cols-7 gap-2 text-center mb-4">
               {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => <span key={`${d}-${i}`} className="text-[10px] font-bold text-gray-400">{d}</span>)}
             </div>
             <div className="grid grid-cols-7 gap-2 text-center">
-              {/* Empty slots for the start of the month (March 2026 starts on a Sunday) */}
-              {Array.from({ length: 6 }).map((_, i) => (
+              {/* Empty slots for the start of the month */}
+              {Array.from({ length: emptySlots }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
-              {Array.from({ length: 31 }).map((_, i) => (
+              {Array.from({ length: daysInMonth }).map((_, i) => (
                 <div 
                   key={i} 
                   onClick={() => setSelectedDay(i + 1)}
                   className={cn(
                     "aspect-square flex items-center justify-center text-[11px] font-bold rounded-xl transition-all cursor-pointer",
-                    i + 1 === selectedDay ? "bg-[#008080] text-white shadow-lg shadow-[#008080]/30" : "hover:bg-[#F5F4F0] text-gray-600"
+                    i + 1 === selectedDay ? "bg-[#008080] text-white shadow-lg shadow-[#008080]/30" : "hover:bg-[#F5F4F0] text-gray-600",
+                    i + 1 === currentDay && i + 1 !== selectedDay && "border border-[#008080] text-[#008080]"
                   )}
                 >
                   {i + 1}

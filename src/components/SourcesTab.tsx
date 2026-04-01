@@ -29,7 +29,10 @@ export const SourcesTab = () => {
         file.name,
         file.type.split('/')[1]?.toUpperCase() || "DOC",
         "RECHERCHE",
-        "Source locale — Importée aujourd'hui"
+        "RECHERCHE",
+        "Source locale",
+        "Importée aujourd'hui",
+        ""
       );
     }
   };
@@ -38,7 +41,18 @@ export const SourcesTab = () => {
     e.preventDefault();
     if (!newSourceTitle.trim()) return;
     
-    await addSource(newSourceTitle, newSourceType, newSourceCat, newSourceContent);
+    // Check if newSourceContent is a URL
+    const isUrl = newSourceContent.startsWith('http');
+    
+    await addSource(
+      newSourceTitle, 
+      newSourceType, 
+      newSourceCat, 
+      newSourceCat, 
+      "Manuel", 
+      isUrl ? "" : newSourceContent,
+      isUrl ? newSourceContent : ""
+    );
     setIsModalOpen(false);
     setNewSourceTitle('');
     setNewSourceContent('');

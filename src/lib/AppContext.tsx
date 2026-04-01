@@ -37,13 +37,17 @@ export interface Source {
   title: string;
   type: string;
   cat: string;
+  source_type: string;
   source: string;
+  content?: string;
+  file_path?: string;
   created_at: string;
 }
 
 export interface TimelineEvent {
   id: string;
   title: string;
+  activity?: string;
   date: string;
   desc: string;
   status: string;
@@ -64,11 +68,14 @@ interface AppContextType {
   toggleTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   sources: Source[];
-  addSource: (title: string, type: string, cat: string, source: string) => Promise<void>;
+  addSource: (title: string, type: string, cat: string, source_type: string, source: string, content?: string, file_path?: string) => Promise<void>;
   deleteSource: (id: string) => Promise<void>;
   events: TimelineEvent[];
-  addEvent: (title: string, date: string, desc: string, status: string, color: string) => Promise<void>;
+  addEvent: (title: string, activity: string, date: string, desc: string, status: string, color: string) => Promise<void>;
   isLoading: boolean;
+  user: { email: string } | null;
+  login: (email: string, pass: string) => boolean;
+  logout: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -81,6 +88,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<{ email: string } | null>(null);
+
+  const login = (email: string, pass: string) => {
+    const authorized = [
+      { email: 'douliagroup@gmail.com', pass: '01234567' },
+      { email: 'eposseek@gmail.com', pass: '01234567' }
+    ];
+    
+    const found = authorized.find(u => u.email === email && u.pass === pass);
+    if (found) {
+      const userData = { email: found.email };
+      setUser(userData);
+      localStorage.setItem('douliamed_user', JSON.stringify(userData));
+      return true;
+    }
+    return false;
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('douliamed_user');
+  };
 
   const fetchSupabaseData = async () => {
     try {
@@ -110,7 +139,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setTasks(mappedTasks);
       }
       if (sourcesData) setSources(sourcesData);
-      if (eventsData) setEvents(eventsData);
+      if (eventsData) {
+        const mappedEvents = (eventsData as any[]).map(e => ({
+          id: e.id,
+          title: e.activity || e.title || '',
+          date: e.date || '',
+          desc: e.notes || e.desc || '',
+          status: e.is_completed ? "COMPLÉTÉ" : "À VENIR",
+          color: e.color || 'bg-blue-400',
+          created_at: e.created_at
+        }));
+        setEvents(mappedEvents);
+      }
 
       // Fetch messages separately
       const { data: messagesData, error: messagesError } = await supabase
@@ -153,6 +193,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     load('douliamed_tasks', setTasks);
     load('douliamed_sources', setSources);
     load('douliamed_events', setEvents);
+    load('douliamed_user', setUser);
 
     fetchSupabaseData();
   }, []);
@@ -291,13 +332,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addSource = async (title: string, type: string, cat: string, source: string) => {
+  const addSource = async (
+    title: string, 
+    type: string, 
+    cat: string, 
+    source_type: string, 
+    source: string, 
+    content?: string, 
+    file_path?: string
+  ) => {
     const newSource: Source = { 
       id: crypto.randomUUID(), 
       title, 
       type, 
       cat, 
+      source_type,
       source, 
+      content,
+      file_path,
       created_at: new Date().toISOString() 
     };
     setSources(prev => [newSource, ...prev]);
@@ -318,11 +370,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try { await supabase.from('sources').delete().eq('id', id); } catch (e) { console.error(e); }
   };
 
-  const addEvent = async (title: string, date: string, desc: string, status: string, color: string) => {
-    const newEvent: TimelineEvent = { id: crypto.randomUUID(), title, date, desc, status, color, created_at: new Date().toISOString() };
+  const addEvent = async (title: string, activity: string, date: string, desc: string, status: string, color: string) => {
+    const newEvent: TimelineEvent = { id: crypto.randomUUID(), title, activity, date, desc, status, color, created_at: new Date().toISOString() };
     setEvents(prev => [newEvent, ...prev]);
     try { 
-      const { error } = await supabase.from('chronogram').insert([newEvent]); 
+      const { error } = await supabase.from('chronogram').insert([{
+        id: newEvent.id,
+        activity: newEvent.activity || newEvent.title,
+        date: newEvent.date,
+        notes: newEvent.desc,
+        is_completed: newEvent.status === "COMPLÉTÉ",
+        color: newEvent.color,
+        created_at: newEvent.created_at
+      }]); 
       if (error) {
         console.error("Supabase Insert Error (Chronogram):", error.message, error.details, error.hint);
         throw error;
@@ -336,7 +396,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{ 
       activeTab, setActiveTab, sessions, activeSessionId, setActiveSessionId, addSession, addMessageToSession,
-      tasks, addTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, isLoading
+      tasks, addTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, isLoading,
+      user, login, logout
     }}>
       {children}
     </AppContext.Provider>

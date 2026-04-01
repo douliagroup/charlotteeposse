@@ -27,6 +27,7 @@ const navigation = [
   { id: 'sources', name: 'Sources', icon: Library },
   { id: 'tasks', name: 'Tâches', icon: CheckSquare },
   { id: 'veille', name: 'Veille Pédiatrique', icon: Microscope },
+  { id: 'outils', name: 'Outils & Recherche', icon: Search },
   { id: 'timeline', name: 'Chronogramme', icon: Calendar },
   { id: 'viz', name: 'Visualisation', icon: BarChart3 },
   { id: 'settings', name: 'Paramètres', icon: Settings },
@@ -46,7 +47,11 @@ interface SidebarProps {
   setIsCollapsed: (collapsed: boolean) => void;
 }
 
+import { useAppContext } from '@/lib/AppContext';
+
 export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }: SidebarProps) => {
+  const { logout } = useAppContext();
+  
   return (
     <>
       {/* Desktop & Mobile Sidebar */}
@@ -58,12 +63,12 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
         {/* Header */}
         <div className={cn("p-5 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
           <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-[#008080]/20 shadow-inner shrink-0">
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-[#008080]/10 shadow-sm shrink-0 bg-white">
               <Image 
-                src="https://i.postimg.cc/v8hD1LQP/Whats_App_Image_2026_03_24_at_06_04_08.jpg" 
+                src="https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png" 
                 alt="DouliaMed Logo" 
                 fill
-                className="object-cover"
+                className="object-contain p-1"
                 referrerPolicy="no-referrer"
               />
             </div>
@@ -178,7 +183,10 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
               )}
             </div>
             {!isCollapsed && (
-              <button className="text-gray-400 hover:text-red-500 transition-colors">
+              <button 
+                onClick={() => logout()}
+                className="text-gray-400 hover:text-red-500 transition-colors"
+              >
                 <LogOut size={16} />
               </button>
             )}

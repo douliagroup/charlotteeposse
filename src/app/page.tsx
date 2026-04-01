@@ -12,13 +12,19 @@ import { TasksTab } from '@/components/TasksTab';
 import { TimelineTab } from '@/components/TimelineTab';
 import { VeilleTab } from '@/components/VeilleTab';
 import { VisualisationTab } from '@/components/VisualisationTab';
+import { OutilsTab } from '@/components/OutilsTab';
 import { SettingsTab } from '@/components/SettingsTab';
+import { LoginPortal } from '@/components/LoginPortal';
 import { Menu, X } from 'lucide-react';
 
 function AppContent() {
-  const { activeTab, setActiveTab } = useAppContext();
+  const { activeTab, setActiveTab, user } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+
+  if (!user) {
+    return <LoginPortal />;
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -38,6 +44,8 @@ function AppContent() {
         return <TimelineTab />;
       case 'viz':
         return <VisualisationTab />;
+      case 'outils':
+        return <OutilsTab />;
       case 'settings':
         return <SettingsTab />;
       default:

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { 
   Plus, 
   Search, 
@@ -112,12 +113,20 @@ export const SessionsTab = () => {
                 <X size={20} />
               </button>
 
-              <div className="mb-8">
-                <div className="w-12 h-12 bg-[#E6F2F2] rounded-2xl flex items-center justify-center text-[#008080] mb-4">
-                  <FileText size={24} />
+              <div className="mb-8 flex items-center gap-4">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-[#008080]/10 shadow-sm overflow-hidden relative shrink-0">
+                  <Image 
+                    src="https://i.postimg.cc/KYPJ7KtG/Doulia_Med.png" 
+                    alt="DouliaMed Logo" 
+                    fill
+                    className="object-contain p-1.5"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
-                <h3 className="text-xl font-bold text-[#1A1A1A]">Nouvelle Session</h3>
-                <p className="text-sm text-gray-400 font-medium">Définissez le contexte de votre recherche médicale.</p>
+                <div>
+                  <h3 className="text-xl font-bold text-[#1A1A1A]">Nouvelle Session</h3>
+                  <p className="text-sm text-gray-400 font-medium">Définissez le contexte de votre recherche médicale.</p>
+                </div>
               </div>
 
               <form onSubmit={handleCreateSession} className="space-y-6">
