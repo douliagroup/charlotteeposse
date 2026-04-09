@@ -55,6 +55,16 @@ export interface TimelineEvent {
   created_at: string;
 }
 
+export interface AcademicDocument {
+  id: string;
+  title: string;
+  content: string;
+  font_family: string;
+  font_size: string;
+  last_modified: string;
+  created_at: string;
+}
+
 interface AppContextType {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -74,6 +84,10 @@ interface AppContextType {
   events: TimelineEvent[];
   addEvent: (title: string, activity: string, date: string, desc: string, status: string, color: string) => Promise<void>;
   updateEvent: (id: string, title: string, activity: string, date: string, desc: string, status: string, color: string) => Promise<void>;
+  documents: AcademicDocument[];
+  addDocument: (title: string, content: string) => Promise<string>;
+  updateDocument: (id: string, title: string, content: string, font_family?: string, font_size?: string) => Promise<void>;
+  deleteDocument: (id: string) => Promise<void>;
   isLoading: boolean;
   user: { email: string } | null;
   login: (email: string, pass: string) => boolean;
@@ -88,6 +102,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [documents, setDocuments] = useState<AcademicDocument[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<{ email: string } | null>(null);
@@ -124,11 +139,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return data;
       };
 
-      const [sessionsData, tasksData, sourcesData, eventsData] = await Promise.all([
+      const [sessionsData, tasksData, sourcesData, eventsData, documentsData] = await Promise.all([
         fetchTable('sessions'),
         fetchTable('taches'),
         fetchTable('sources'),
-        fetchTable('chronogram')
+        fetchTable('chronogram'),
+        fetchTable('documents')
       ]);
 
       if (sessionsData) setSessions(sessionsData);
@@ -153,6 +169,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }));
         setEvents(mappedEvents);
       }
+      if (documentsData) setDocuments(documentsData);
 
       // Fetch messages separately
       const { data: messagesData, error: messagesError } = await supabase
@@ -195,6 +212,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     load('douliamed_tasks', setTasks);
     load('douliamed_sources', setSources);
     load('douliamed_events', setEvents);
+    load('douliamed_documents', setDocuments);
     load('douliamed_user', setUser);
 
     fetchSupabaseData();
@@ -207,8 +225,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('douliamed_tasks', JSON.stringify(tasks));
       localStorage.setItem('douliamed_sources', JSON.stringify(sources));
       localStorage.setItem('douliamed_events', JSON.stringify(events));
+      localStorage.setItem('douliamed_documents', JSON.stringify(documents));
     }
-  }, [sessions, tasks, sources, events, isLoading]);
+  }, [sessions, tasks, sources, events, documents, isLoading]);
 
   const addSession = async (title: string, note: string) => {
     const now = new Date();
@@ -424,11 +443,66 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addDocument = async (title: string, content: string) => {
+    const now = new Date().toISOString();
+    const newDoc: AcademicDocument = {
+      id: crypto.randomUUID(),
+      title,
+      content,
+      font_family: 'font-serif',
+      font_size: 'text-base',
+      last_modified: now,
+      created_at: now
+    };
+    setDocuments(prev => [newDoc, ...prev]);
+    try {
+      const { error } = await supabase.from('documents').insert([newDoc]);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Error adding document:", e);
+    }
+    return newDoc.id;
+  };
+
+  const updateDocument = async (id: string, title: string, content: string, font_family?: string, font_size?: string) => {
+    const now = new Date().toISOString();
+    setDocuments(prev => prev.map(d => d.id === id ? { 
+      ...d, 
+      title, 
+      content, 
+      font_family: font_family || d.font_family, 
+      font_size: font_size || d.font_size,
+      last_modified: now 
+    } : d));
+    try {
+      const { error } = await supabase.from('documents').update({
+        title,
+        content,
+        font_family,
+        font_size,
+        last_modified: now
+      }).eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Error updating document:", e);
+    }
+  };
+
+  const deleteDocument = async (id: string) => {
+    setDocuments(prev => prev.filter(d => d.id !== id));
+    try {
+      await supabase.from('documents').delete().eq('id', id);
+    } catch (e) {
+      console.error("Error deleting document:", e);
+    }
+  };
+
   return (
     <AppContext.Provider value={{ 
       activeTab, setActiveTab, sessions, activeSessionId, setActiveSessionId, addSession, addMessageToSession,
-      tasks, addTask, updateTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, updateEvent, isLoading,
-      user, login, logout
+      tasks, addTask, updateTask, toggleTask, deleteTask, sources, addSource, deleteSource, events, addEvent, updateEvent,
+      documents, addDocument, updateDocument, deleteDocument,
+      isLoading, user, login, logout
     }}>
       {children}
     </AppContext.Provider>

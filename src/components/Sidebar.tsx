@@ -15,7 +15,8 @@ import {
   LogOut,
   Search,
   LayoutDashboard,
-  Microscope
+  Microscope,
+  PenTool
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ const navigation = [
   { id: 'sessions', name: 'Sessions', icon: Layers },
   { id: 'sources', name: 'Sources', icon: Library },
   { id: 'tasks', name: 'Tâches', icon: CheckSquare },
+  { id: 'redaction', name: 'Rédaction', icon: PenTool },
   { id: 'veille', name: 'Veille Pédiatrique', icon: Microscope },
   { id: 'outils', name: 'Outils & Recherche', icon: Search },
   { id: 'timeline', name: 'Chronogramme', icon: Calendar },

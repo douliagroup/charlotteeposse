@@ -81,12 +81,16 @@ export async function POST(req: Request) {
     const parts: any[] = [{ text: message || "Analyse ce document." }];
 
     if (file) {
-      parts.push({
-        inlineData: {
-          data: file.data,
-          mimeType: file.mimeType
-        }
-      });
+      if (file.extractedText) {
+        parts[0].text += `\n\nCONTENU DU DOCUMENT (${file.name}) :\n${file.extractedText}`;
+      } else {
+        parts.push({
+          inlineData: {
+            data: file.data,
+            mimeType: file.mimeType
+          }
+        });
+      }
     }
 
     contents.push({
