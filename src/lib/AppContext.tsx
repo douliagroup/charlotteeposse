@@ -460,6 +460,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
     } catch (e) {
       console.error("Error adding document:", e);
+      throw e;
     }
     return newDoc.id;
   };
@@ -485,6 +486,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
     } catch (e) {
       console.error("Error updating document:", e);
+      throw e;
     }
   };
 

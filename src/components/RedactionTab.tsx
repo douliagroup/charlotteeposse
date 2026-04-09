@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext, AcademicDocument } from '@/lib/AppContext';
 import { cn } from '@/lib/utils';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { jsPDF } from "jspdf";
 
 const FONTS = [
@@ -68,20 +68,38 @@ export const RedactionTab = () => {
 
   const handleSave = async () => {
     if (!activeDocId) return;
+    
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+      alert("Configuration Supabase manquante. Veuillez configurer les secrets dans les paramètres d'AI Studio.");
+      return;
+    }
+
+    console.log("Saving document:", activeDocId, title);
     setIsSaving(true);
     setSaveStatus('saving');
-    await updateDocument(activeDocId, title, content, fontFamily, fontSize);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await updateDocument(activeDocId, title, content, fontFamily, fontSize);
+      console.log("Document saved successfully");
       setSaveStatus('saved');
+    } catch (error: any) {
+      console.error("Error saving document:", error);
+      setSaveStatus('idle');
+      alert(`Erreur lors de la sauvegarde : ${error.message || "Vérifiez votre configuration Supabase."}`);
+    } finally {
+      setIsSaving(false);
       setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 500);
+    }
   };
 
   const handleCreate = async () => {
-    const newTitle = "Nouveau Brouillon " + (documents.length + 1);
-    const newId = await addDocument(newTitle, "");
-    setActiveDocId(newId);
+    try {
+      const newTitle = "Nouveau Brouillon " + (documents.length + 1);
+      const newId = await addDocument(newTitle, "");
+      setActiveDocId(newId);
+    } catch (error: any) {
+      alert("Erreur lors de la création du document. Vérifiez votre configuration Supabase.");
+    }
   };
 
   const handleAiAction = async (action: 'correct' | 'improve' | 'summarize') => {
@@ -89,8 +107,10 @@ export const RedactionTab = () => {
     setIsAiProcessing(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
-      const ai = new GoogleGenerativeAI(apiKey);
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer NEXT_PUBLIC_GEMINI_API_KEY dans les secrets d'AI Studio.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       const systemInstruction = `Tu es un assistant de rédaction académique d'élite pour le Docteur Eposse, pédiatre. 
       Ton rôle est d'améliorer la qualité scientifique et linguistique de ses brouillons.
@@ -106,14 +126,15 @@ export const RedactionTab = () => {
         prompt = `Génère un résumé (Abstract) académique structuré basé sur ce texte :\n\n${content}`;
       }
 
-      const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: systemInstruction
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+        }
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const text = result.text;
 
       if (text) {
         setContent(text);

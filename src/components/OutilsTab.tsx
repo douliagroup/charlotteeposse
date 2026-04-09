@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { searchTavilyRaw } from '@/lib/tavilyClient';
 import { useAppContext } from '@/lib/AppContext';
 import ReactMarkdown from 'react-markdown';
@@ -105,9 +105,10 @@ export const OutilsTab = () => {
     setIsAnalyzingGrowth(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer les secrets dans AI Studio.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       const prompt = `Analyse ces paramètres de croissance pédiatrique :
       Âge : ${growthData.age}
@@ -119,13 +120,15 @@ export const OutilsTab = () => {
       Donne une conclusion sur l'état nutritionnel et le développement staturo-pondéral. 
       Réponds en français académique.`;
       
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      });
       
-      setGrowthAnalysis(text || "Erreur d'analyse.");
-    } catch (error) {
+      setGrowthAnalysis(result.text || "Erreur d'analyse.");
+    } catch (error: any) {
       console.error("Growth Analysis Error:", error);
+      alert(error.message || "Erreur lors de l'analyse de croissance.");
     } finally {
       setIsAnalyzingGrowth(false);
     }
@@ -135,8 +138,10 @@ export const OutilsTab = () => {
     setIsGeneratingCase(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
-      const genAI = new GoogleGenerativeAI(apiKey);
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer les secrets dans AI Studio.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       const systemInstruction = `Tu es un expert pédiatre et rédacteur scientifique d'élite. 
       Ton rôle est de structurer des cas cliniques pour des publications académiques de haut niveau.
@@ -161,18 +166,18 @@ export const OutilsTab = () => {
       
       Le rapport doit inclure les sections suivantes : __TITRE DU CAS__, __RÉSUMÉ__, __INTRODUCTION__, __PRÉSENTATION DU CAS__, __DISCUSSION__, __CONCLUSION__.`;
       
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: systemInstruction
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+        }
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      setGeneratedCase(text || "Erreur de génération.");
-    } catch (error) {
+      setGeneratedCase(result.text || "Erreur de génération.");
+    } catch (error: any) {
       console.error("Case Generation Error:", error);
+      alert(error.message || "Erreur lors de la génération du cas clinique.");
     } finally {
       setIsGeneratingCase(false);
     }

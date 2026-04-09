@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     while (retries <= maxRetries) {
       try {
         response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview", // Reverted to Flash as requested
+          model: "gemini-3-flash-preview",
           contents: contents,
           config: {
             systemInstruction,

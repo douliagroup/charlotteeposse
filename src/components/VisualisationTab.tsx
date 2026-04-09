@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Activity, Loader2, Download, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import Papa from 'papaparse';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { jsPDF } from "jspdf";
@@ -57,8 +57,10 @@ export const VisualisationTab = () => {
     setIsGenerating(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
-      const genAI = new GoogleGenerativeAI(apiKey);
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer les secrets dans AI Studio.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       const systemInstruction = `Tu es un expert en biostatistique médicale et oncologie pédiatrique. 
       Ton analyse doit être rigoureuse, académique et basée sur les standards internationaux (OMS, SIOP). 
@@ -71,18 +73,18 @@ export const VisualisationTab = () => {
       
       Génère une interprétation scientifique concise (max 3-4 phrases) pour le bloc d'interprétation rapide.`;
       
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: systemInstruction
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+        }
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      setBiostatsInterpretation(text || "Erreur d'analyse.");
-    } catch (error) {
+      setBiostatsInterpretation(result.text || "Erreur d'analyse.");
+    } catch (error: any) {
       console.error("Biostats Error:", error);
+      alert(error.message || "Erreur lors de l'analyse biostatistique.");
     } finally {
       setIsGenerating(false);
     }
@@ -92,8 +94,10 @@ export const VisualisationTab = () => {
     setIsGeneratingReport(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
-      const genAI = new GoogleGenerativeAI(apiKey);
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer les secrets dans AI Studio.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       const systemInstruction = `Tu es un expert en biostatistique médicale et oncologie pédiatrique d'élite. 
       Ton rôle est de rédiger un rapport académique complet basé sur les données fournies.
@@ -117,18 +121,18 @@ export const VisualisationTab = () => {
       - Discussion et Implications Cliniques
       - Conclusion et Recommandations Stratégiques`;
       
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: systemInstruction
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+        }
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      setFullReport(text || "Erreur de génération du rapport.");
-    } catch (error) {
+      setFullReport(result.text || "Erreur de génération du rapport.");
+    } catch (error: any) {
       console.error("Report Error:", error);
+      alert(error.message || "Erreur lors de la génération du rapport.");
     } finally {
       setIsGeneratingReport(false);
     }
