@@ -47,17 +47,15 @@ export async function POST(req: Request) {
       Tu dois souvent référer le Docteur Eposse aux pages spécifiques de l'application pour approfondir son travail :
       1. VEILLE PÉDIATRIQUE : Pour consulter les dernières publications scientifiques mondiales traduites et synthétisées par l'IA. C'est ici que se trouve la veille stratégique automatisée.
       2. OUTILS & RECHERCHE : Une suite d'outils cliniques et académiques incluant :
-         - CALCULATEUR DE DOSE : Désormais enrichi d'une vaste bibliothèque de médicaments pédiatriques (incluant la drépanocytose). Il propose une recherche par filtre, des calculs précis et des __Notes & Précautions__ de sécurité pour chaque molécule.
+         - CALCULATEUR DE DOSE : Pour les dosages pédiatriques précis.
          - ANALYSE DE CROISSANCE : Interprétation des Z-scores (Poids, Taille, PC) selon l'OMS.
          - SCORES CLINIQUES : Calcul automatique des scores d'Apgar et de Silverman.
-         - ASSISTANT CAS CLINIQUE : Génération de rapports structurés (Titre, Résumé, Introduction, etc.) sans symboles superflus, prêts pour publication. Permet l'export PDF, la copie rapide et l'envoi direct vers l'onglet __Rédaction__.
+         - ASSISTANT CAS CLINIQUE : Génération de rapports structurés pour publications académiques.
          - RECHERCHE PUBMED : Accès direct à la base de données PubMed.
-      3. RÉDACTION : Un espace dédié à la rédaction de ses brouillons officiels. Il permet de gérer des documents, de choisir la police et la taille du texte, d'utiliser l'IA pour corriger ou optimiser le style académique, et de sauvegarder le travail sur Supabase.
-      4. CHRONOGRAMME : Pour la planification stratégique de sa carrière et de son agrégation.
-      5. GESTIONNAIRE DE TÂCHES : Pour suivre l'avancement de ses projets de recherche.
-      6. VISUALISATION : Pour l'analyse visuelle des données avec support d'import/export CSV et interprétation IA des graphiques.
-      7. SESSIONS : Pour retrouver l'historique de ses réflexions.
-      8. CHAT IA : Supporte désormais l'analyse de fichiers __CSV, Word, PDF et Images__ pour une assistance multidimensionnelle.
+      3. CHRONOGRAMME : Pour la planification stratégique de sa carrière et de son agrégation. Permet d'ajouter et de modifier des événements clés.
+      4. GESTIONNAIRE DE TÂCHES : Pour suivre l'avancement de ses projets de recherche et tâches académiques.
+      5. VISUALISATION : Pour l'analyse visuelle des données de recherche.
+      6. SESSIONS : Pour retrouver l'historique de ses réflexions et analyses passées.
       
       CONTEXTE (SUPABASE) :
       ${sessionContext || ""}
@@ -83,16 +81,12 @@ export async function POST(req: Request) {
     const parts: any[] = [{ text: message || "Analyse ce document." }];
 
     if (file) {
-      if (file.extractedText) {
-        parts[0].text += `\n\nCONTENU DU DOCUMENT (${file.name}) :\n${file.extractedText}`;
-      } else {
-        parts.push({
-          inlineData: {
-            data: file.data,
-            mimeType: file.mimeType
-          }
-        });
-      }
+      parts.push({
+        inlineData: {
+          data: file.data,
+          mimeType: file.mimeType
+        }
+      });
     }
 
     contents.push({
@@ -108,7 +102,7 @@ export async function POST(req: Request) {
     while (retries <= maxRetries) {
       try {
         response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-3-flash-preview", // Reverted to Flash as requested
           contents: contents,
           config: {
             systemInstruction,

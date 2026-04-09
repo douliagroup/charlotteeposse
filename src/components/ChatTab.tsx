@@ -10,9 +10,7 @@ import {
   Send, 
   Loader2,
   Info,
-  MessageSquare,
-  FileSpreadsheet,
-  FileCode
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from "jspdf";
@@ -21,7 +19,6 @@ import { useAppContext, Message } from '@/lib/AppContext';
 import { searchTavily } from '@/lib/tavilyClient';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import mammoth from 'mammoth';
 
 export const ChatTab = () => {
   const { activeSessionId, sessions, addMessageToSession, sources, tasks, setActiveTab } = useAppContext();
@@ -30,7 +27,7 @@ export const ChatTab = () => {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<{ name: string; data: string; mimeType: string; extractedText?: string } | null>(null);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; data: string; mimeType: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -231,56 +228,22 @@ export const ChatTab = () => {
     doc.save(`DouliaMed_Analyse_${Date.now()}.pdf`);
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      
-      if (file.name.endsWith('.docx')) {
-        reader.onload = async (event) => {
-          const arrayBuffer = event.target?.result as ArrayBuffer;
-          try {
-            const result = await mammoth.extractRawText({ arrayBuffer });
-            const base64 = btoa(
-              new Uint8Array(arrayBuffer)
-                .reduce((data, byte) => data + String.fromCharCode(byte), '')
-            );
-            setAttachedFile({
-              name: file.name,
-              data: base64,
-              mimeType: file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              extractedText: result.value
-            });
-          } catch (error) {
-            console.error("Word Extraction Error:", error);
-            alert("Erreur lors de l'extraction du texte du fichier Word.");
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } else if (file.name.endsWith('.csv') || file.type === 'text/csv') {
-        reader.onload = (event) => {
-          const text = event.target?.result as string;
-          const base64 = btoa(unescape(encodeURIComponent(text)));
-          setAttachedFile({
-            name: file.name,
-            data: base64,
-            mimeType: 'text/csv',
-            extractedText: text
-          });
-        };
-        reader.readAsText(file);
-      } else {
-        reader.onload = (event) => {
-          const result = event.target?.result as string;
-          const base64 = result.split(',')[1];
-          setAttachedFile({
-            name: file.name,
-            data: base64,
-            mimeType: file.type
-          });
-        };
-        reader.readAsDataURL(file);
-      }
+      reader.onload = (event) => {
+        const base64 = (event.target?.result as string).split(',')[1];
+        setAttachedFile({
+          name: file.name,
+          data: base64,
+          mimeType: file.type
+        });
+        
+        // Logic for Supabase Storage would go here:
+        // const { data, error } = await supabase.storage.from('documents').upload(`sessions/${activeSessionId}/${file.name}`, file);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -421,11 +384,11 @@ export const ChatTab = () => {
               ref={fileInputRef} 
               className="hidden" 
               onChange={handleUpload}
-              accept="image/*,application/pdf,text/csv,.csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/msword,.doc"
+              accept="image/*,application/pdf"
             />
             {attachedFile ? (
               <div className="flex items-center gap-2 bg-[#008080]/10 text-[#008080] text-[10px] font-bold px-3 py-1 rounded-full border border-[#008080]/20">
-                {attachedFile.name.endsWith('.csv') ? <FileSpreadsheet size={12} /> : attachedFile.name.endsWith('.docx') || attachedFile.name.endsWith('.doc') ? <FileCode size={12} /> : <FileText size={12} />}
+                <FileText size={12} />
                 <span className="max-w-[120px] truncate">{attachedFile.name}</span>
                 <button onClick={() => setAttachedFile(null)} className="hover:text-red-500 ml-1 text-xs">×</button>
               </div>
@@ -435,7 +398,7 @@ export const ChatTab = () => {
                 className="flex items-center gap-2 text-[#008080] text-[10px] font-bold hover:bg-[#008080]/10 px-3 py-1 rounded-full transition-all border border-[#008080]/10"
               >
                 <Upload size={12} />
-                TÉLÉVERSER DOCUMENTS (PDF, WORD, CSV, IMAGE)
+                TÉLÉVERSER DOCUMENTS
               </button>
             )}
           </div>
@@ -457,7 +420,7 @@ export const ChatTab = () => {
                     if (textareaRef.current) textareaRef.current.style.height = 'auto';
                   }
                 }}
-                placeholder="Posez votre question médicale ou analysez un document..." 
+                placeholder="Posez votre question médicale..." 
                 rows={1}
                 className="w-full bg-white/50 border border-[#008080]/10 rounded-xl py-3 px-4 pr-10 text-[13px] font-medium focus:ring-2 focus:ring-[#008080] outline-none transition-all placeholder:text-gray-400 shadow-inner resize-none min-h-[46px] max-h-[300px] overflow-y-auto"
               />
