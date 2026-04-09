@@ -14,27 +14,54 @@ import {
   CheckCircle2,
   Plus,
   Trash2,
-  Download
+  Download,
+  Copy,
+  Send,
+  FileText as FileIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { GoogleGenAI } from "@google/genai";
 import { searchTavilyRaw } from '@/lib/tavilyClient';
+import { useAppContext } from '@/lib/AppContext';
+import ReactMarkdown from 'react-markdown';
+import { jsPDF } from "jspdf";
 
 const PEDIATRIC_DRUGS = [
-  { name: 'Paracétamol', dose: '15 mg/kg', freq: 'toutes les 6h', max: '60 mg/kg/j' },
-  { name: 'Amoxicilline', dose: '80-90 mg/kg/j', freq: 'en 2-3 prises', max: '3 g/j' },
-  { name: 'Ibuprofène', dose: '10 mg/kg', freq: 'toutes les 8h', max: '30 mg/kg/j' },
-  { name: 'Ceftriaxone', dose: '50-100 mg/kg/j', freq: 'en 1 prise', max: '2 g/j' },
-  { name: 'Gentamicine', dose: '5-7 mg/kg/j', freq: 'en 1 prise', max: '---' },
+  // Antalgiques & Antipyrétiques
+  { id: 'para', name: 'Paracétamol', dose: 15, unit: 'mg/kg/dose', freq: 'Toutes les 6h', max: '60 mg/kg/j', cat: 'Antalgique', notes: 'Espacez les prises de 6h minimum. Risque d\'hépatotoxicité en cas de surdosage.' },
+  { id: 'ibu', name: 'Ibuprofène', dose: 10, unit: 'mg/kg/dose', freq: 'Toutes les 8h', max: '30 mg/kg/j', cat: 'AINS', notes: 'À prendre au cours des repas. Contre-indiqué en cas de varicelle ou d\'infection pulmonaire sévère.' },
+  { id: 'morph', name: 'Morphine (IV)', dose: 0.1, unit: 'mg/kg/dose', freq: 'Toutes les 4h', max: 'Surveillance étroite', cat: 'Opioïde', notes: 'Surveillance de la fréquence respiratoire et de la saturation (SaO2) obligatoire.' },
+  { id: 'tram', name: 'Tramadol (PO)', dose: 1, unit: 'mg/kg/dose', freq: 'Toutes les 6-8h', max: '400 mg/j', cat: 'Opioïde', notes: 'Utiliser avec prudence chez l\'enfant de plus de 12 ans. Risque de dépression respiratoire.' },
+  
+  // Antibiotiques
+  { id: 'amox', name: 'Amoxicilline', dose: 80, unit: 'mg/kg/j', freq: 'En 2-3 prises', max: '3 g/j', cat: 'Antibiotique', notes: 'Privilégier 2 prises par jour pour une meilleure observance.' },
+  { id: 'augm', name: 'Augmentin', dose: 80, unit: 'mg/kg/j', freq: 'En 2-3 prises', max: '3 g/j', cat: 'Antibiotique', notes: 'Risque de troubles digestifs (diarrhées). À prendre en début de repas.' },
+  { id: 'ceft', name: 'Ceftriaxone', dose: 50, unit: 'mg/kg/j', freq: 'En 1 prise (IV/IM)', max: '2 g/j', cat: 'Antibiotique', notes: 'Utilisation hospitalière privilégiée. Attention au risque de précipitation avec le calcium.' },
+  { id: 'gent', name: 'Gentamicine', dose: 6, unit: 'mg/kg/j', freq: 'En 1 prise (IV/IM)', max: '---', cat: 'Antibiotique', notes: 'Risque de néphrotoxicité et d\'ototoxicité. Surveillance des taux résiduels si traitement > 3 jours.' },
+  { id: 'azit', name: 'Azithromycine', dose: 10, unit: 'mg/kg/j', freq: 'En 1 prise (3 jours)', max: '500 mg/j', cat: 'Antibiotique', notes: 'Efficace sur les germes intracellulaires. Prise unique quotidienne.' },
+  
+  // Drépanocytose & Hématologie
+  { id: 'hydr', name: 'Hydroxyurée', dose: 15, unit: 'mg/kg/j', freq: 'En 1 prise quotidienne', max: '35 mg/kg/j', cat: 'Drépanocytose', notes: 'Traitement de fond de la drépanocytose. Surveillance mensuelle de la NFS (recherche de neutropénie).' },
+  { id: 'afol', name: 'Acide Folique', dose: 5, unit: 'mg/j', freq: '1 fois par jour', max: '5 mg/j', cat: 'Drépanocytose', notes: 'Indispensable pour prévenir l\'anémie mégaloblastique chez le drépanocytaire.' },
+  { id: 'penv', name: 'Pénicilline V', dose: 50000, unit: 'UI/kg/j', freq: 'En 2 prises', max: '---', cat: 'Prophylaxie SCD', notes: 'Prophylaxie anti-pneumococcique systématique jusqu\'à l\'âge de 5 ans.' },
+  
+  // Respiratoire & Autres
+  { id: 'salb', name: 'Salbutamol (Sirop)', dose: 0.1, unit: 'mg/kg/dose', freq: 'Toutes les 6-8h', max: '2 mg/dose', cat: 'Respiratoire', notes: 'Risque de tachycardie et de tremblements. Préférer la voie inhalée si possible.' },
+  { id: 'pred', name: 'Prednisolone', dose: 1, unit: 'mg/kg/j', freq: 'En 1-2 prises', max: '60 mg/j', cat: 'Corticoïde', notes: 'À prendre le matin. Cure courte (3-5 jours) généralement suffisante en pédiatrie.' },
+  { id: 'phen', name: 'Phénobarbital', dose: 3, unit: 'mg/kg/j', freq: 'En 1-2 prises', max: '---', cat: 'Anticonvulsivant', notes: 'Inducteur enzymatique puissant. Surveillance de la sédation.' },
+  { id: 'valp', name: 'Valproate', dose: 20, unit: 'mg/kg/j', freq: 'En 2 prises', max: '---', cat: 'Anticonvulsivant', notes: 'Surveillance de la fonction hépatique. Risque de prise de poids.' },
 ];
 
 export const OutilsTab = () => {
+  const { setActiveTab, addDocument } = useAppContext();
   const [activeTool, setActiveTool] = useState<'calc' | 'case' | 'pubmed' | 'scores' | 'growth'>('calc');
   
   // Calculator State
   const [weight, setWeight] = useState<string>('');
   const [selectedDrug, setSelectedDrug] = useState(PEDIATRIC_DRUGS[0]);
+  const [drugSearch, setDrugSearch] = useState('');
+  const [isDrugListOpen, setIsDrugListOpen] = useState(false);
   
   // Case Assistant State
   const [caseData, setCaseData] = useState({
@@ -43,7 +70,8 @@ export const OutilsTab = () => {
     motif: '',
     antecedents: '',
     examen: '',
-    hypotheses: ''
+    hypotheses: '',
+    traitement: ''
   });
   const [isGeneratingCase, setIsGeneratingCase] = useState(false);
   const [generatedCase, setGeneratedCase] = useState<string | null>(null);
@@ -64,8 +92,10 @@ export const OutilsTab = () => {
 
   const handleCalculate = () => {
     const w = parseFloat(weight);
-    if (isNaN(w)) return "---";
-    return `${(w * parseFloat(selectedDrug.dose)).toFixed(1)} mg`;
+    if (isNaN(w) || w <= 0) return "---";
+    const result = w * selectedDrug.dose;
+    const unit = selectedDrug.unit.split('/')[0];
+    return `${result.toLocaleString('fr-FR')} ${unit}`;
   };
 
   const calculateApgar = () => Object.values(apgar).reduce((a, b) => a + b, 0);
@@ -75,7 +105,9 @@ export const OutilsTab = () => {
     setIsAnalyzingGrowth(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer les secrets dans AI Studio.");
+      }
       const ai = new GoogleGenAI({ apiKey });
       
       const prompt = `Analyse ces paramètres de croissance pédiatrique :
@@ -88,14 +120,15 @@ export const OutilsTab = () => {
       Donne une conclusion sur l'état nutritionnel et le développement staturo-pondéral. 
       Réponds en français académique.`;
       
-      const response = await ai.models.generateContent({
+      const result = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
       
-      setGrowthAnalysis(response.text || "Erreur d'analyse.");
-    } catch (error) {
+      setGrowthAnalysis(result.text || "Erreur d'analyse.");
+    } catch (error: any) {
       console.error("Growth Analysis Error:", error);
+      alert(error.message || "Erreur lors de l'analyse de croissance.");
     } finally {
       setIsAnalyzingGrowth(false);
     }
@@ -105,42 +138,78 @@ export const OutilsTab = () => {
     setIsGeneratingCase(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Clé API manquante");
+      if (!apiKey || apiKey === "TODO_KEYHERE") {
+        throw new Error("Clé API Gemini manquante ou invalide. Veuillez configurer les secrets dans AI Studio.");
+      }
       const ai = new GoogleGenAI({ apiKey });
       
       const systemInstruction = `Tu es un expert pédiatre et rédacteur scientifique d'élite. 
       Ton rôle est de structurer des cas cliniques pour des publications académiques de haut niveau.
       
-      CONTRAINTES DE FORMATAGE STRICTES :
-      1. Utilise uniquement le GRAS (syntaxe __mot__) pour les titres de sections et les mots-clés essentiels.
+      CONTRAINTES DE FORMATAGE CRITIQUES :
+      1. Utilise UNIQUEMENT le double underscore (__mot__) pour mettre en gras les titres de sections et les points clés.
       2. Il est STRICTEMENT INTERDIT d'utiliser des astérisques (*), des dièses (#), des tirets (-) ou des listes à puces.
       3. N'utilise AUCUNE balise HTML.
-      4. Rédige des paragraphes fluides et élégants, optimisés pour la synthèse vocale (TTS).
+      4. Rédige des paragraphes fluides, structurés et élégants.
       5. Sépare chaque grande section par deux sauts de ligne.
-      6. Le ton doit être académique, rigoureux et précis.`;
+      6. Ne mets aucun symbole de liste, utilise des transitions textuelles (ex: "Concernant les antécédents...", "L'examen clinique révèle...").
+      7. Le ton doit être académique, rigoureux et précis.`;
 
-      const prompt = `Structure ce cas clinique pour une publication académique :
-      Âge : ${caseData.age}
-      Sexe : ${caseData.sexe}
-      Motif : ${caseData.motif}
-      Antécédents : ${caseData.antecedents}
-      Examen : ${caseData.examen}
-      Hypothèses : ${caseData.hypotheses}
+      const prompt = `Rédige un rapport de cas clinique structuré et prêt pour publication basé sur ces informations :
+      ÂGE : ${caseData.age}
+      SEXE : ${caseData.sexe === 'M' ? 'Masculin' : 'Féminin'}
+      MOTIF : ${caseData.motif}
+      ANTÉCÉDENTS : ${caseData.antecedents}
+      EXAMEN CLINIQUE : ${caseData.examen}
+      HYPOTHÈSES & DIAGNOSTIC : ${caseData.hypotheses}
+      TRAITEMENT & ÉVOLUTION : ${caseData.traitement}
       
-      Le rapport doit inclure les sections suivantes : Titre, Résumé, Introduction, Présentation du Cas, Discussion, Conclusion.`;
+      Le rapport doit inclure les sections suivantes : __TITRE DU CAS__, __RÉSUMÉ__, __INTRODUCTION__, __PRÉSENTATION DU CAS__, __DISCUSSION__, __CONCLUSION__.`;
       
-      const response = await ai.models.generateContent({
+      const result = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: { systemInstruction }
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+        }
       });
-      
-      setGeneratedCase(response.text || "Erreur de génération.");
-    } catch (error) {
+
+      setGeneratedCase(result.text || "Erreur de génération.");
+    } catch (error: any) {
       console.error("Case Generation Error:", error);
+      alert(error.message || "Erreur lors de la génération du cas clinique.");
     } finally {
       setIsGeneratingCase(false);
     }
+  };
+
+  const copyCaseToClipboard = () => {
+    if (!generatedCase) return;
+    navigator.clipboard.writeText(generatedCase.replace(/__/g, ''));
+    alert("Texte copié dans le presse-papier !");
+  };
+
+  const exportCasePDF = () => {
+    if (!generatedCase) return;
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Rapport de Cas Clinique - DouliaMed", 20, 20);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const cleanText = generatedCase.replace(/__/g, '');
+    const splitText = doc.splitTextToSize(cleanText, 170);
+    doc.text(splitText, 20, 35);
+    
+    doc.save(`Cas_Clinique_${new Date().getTime()}.pdf`);
+  };
+
+  const sendToRedaction = async () => {
+    if (!generatedCase) return;
+    const title = "Cas Clinique - " + (caseData.motif || "Sans titre");
+    await addDocument(title, generatedCase.replace(/__/g, '**'));
+    setActiveTab('redaction');
   };
 
   const handlePubmedSearch = async () => {
@@ -382,21 +451,66 @@ export const OutilsTab = () => {
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">MÉDICAMENT</label>
-                      <div className="grid grid-cols-1 gap-2">
-                        {PEDIATRIC_DRUGS.map((drug) => (
-                          <button
-                            key={drug.name}
-                            onClick={() => setSelectedDrug(drug)}
-                            className={cn(
-                              "text-left px-6 py-4 rounded-2xl text-xs font-bold transition-all border",
-                              selectedDrug.name === drug.name 
-                                ? "bg-[#E6F2F2] border-[#008080] text-[#008080]" 
-                                : "bg-white border-[#E8E5E0] text-gray-500 hover:border-[#008080]/30"
-                            )}
-                          >
-                            {drug.name} ({drug.dose})
-                          </button>
-                        ))}
+                      <div className="relative">
+                        <button
+                          onClick={() => setIsDrugListOpen(!isDrugListOpen)}
+                          className="w-full bg-[#F5F4F0] border border-[#E8E5E0] rounded-2xl py-4 px-6 text-sm font-bold text-[#1A1A1A] flex items-center justify-between hover:border-[#008080]/30 transition-all"
+                        >
+                          <div className="flex flex-col items-start">
+                            <span className="text-[10px] text-[#008080] uppercase tracking-tighter mb-0.5">{selectedDrug.cat}</span>
+                            <span>{selectedDrug.name}</span>
+                          </div>
+                          <ChevronRight size={18} className={cn("transition-transform", isDrugListOpen && "rotate-90")} />
+                        </button>
+
+                        <AnimatePresence>
+                          {isDrugListOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 10 }}
+                              className="absolute z-50 w-full mt-2 bg-white border border-[#E8E5E0] rounded-3xl shadow-2xl overflow-hidden"
+                            >
+                              <div className="p-4 border-b border-[#F5F4F0]">
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                  <input 
+                                    type="text"
+                                    placeholder="Rechercher un médicament..."
+                                    value={drugSearch}
+                                    onChange={(e) => setDrugSearch(e.target.value)}
+                                    className="w-full bg-[#F5F4F0] border-none rounded-xl py-2 pl-9 pr-3 text-xs focus:ring-1 focus:ring-[#008080] outline-none"
+                                  />
+                                </div>
+                              </div>
+                              <div className="max-h-[300px] overflow-y-auto p-2 scrollbar-hide">
+                                {PEDIATRIC_DRUGS.filter(d => 
+                                  d.name.toLowerCase().includes(drugSearch.toLowerCase()) || 
+                                  d.cat.toLowerCase().includes(drugSearch.toLowerCase())
+                                ).map((drug) => (
+                                  <button
+                                    key={drug.id}
+                                    onClick={() => {
+                                      setSelectedDrug(drug);
+                                      setIsDrugListOpen(false);
+                                      setDrugSearch('');
+                                    }}
+                                    className={cn(
+                                      "w-full text-left px-4 py-3 rounded-xl transition-all flex items-center justify-between group",
+                                      selectedDrug.id === drug.id ? "bg-[#E6F2F2] text-[#008080]" : "hover:bg-[#F5F4F0]"
+                                    )}
+                                  >
+                                    <div>
+                                      <p className="text-xs font-bold">{drug.name}</p>
+                                      <p className="text-[9px] text-gray-400 uppercase tracking-widest">{drug.cat}</p>
+                                    </div>
+                                    <span className="text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">{drug.dose} {drug.unit}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </div>
@@ -407,16 +521,42 @@ export const OutilsTab = () => {
                     <Calculator size={120} />
                   </div>
                   <div className="relative z-10">
-                    <p className="text-[10px] font-bold text-[#008080] uppercase tracking-widest mb-4">DOSE CALCULÉE</p>
-                    <h4 className="text-6xl font-bold mb-8 tracking-tighter">{handleCalculate()}</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 text-xs text-gray-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#008080]" />
-                        <span className="font-bold uppercase tracking-wider">FRÉQUENCE :</span> {selectedDrug.freq}
+                    <div className="flex items-center gap-2 mb-4">
+                      <p className="text-[10px] font-bold text-[#008080] uppercase tracking-widest">DOSE CALCULÉE</p>
+                      <span className="text-[9px] bg-[#008080]/20 text-[#008080] px-2 py-0.5 rounded-full font-bold">{selectedDrug.unit}</span>
+                    </div>
+                    <h4 className="text-6xl font-bold mb-8 tracking-tighter text-white">
+                      {handleCalculate()}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-6">
+                      <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#008080]/20 flex items-center justify-center text-[#008080]">
+                            <Activity size={16} />
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Schéma Thérapeutique</span>
+                        </div>
+                        <p className="text-sm font-bold text-white">{selectedDrug.freq}</p>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        <span className="font-bold uppercase tracking-wider">MAXIMUM :</span> {selectedDrug.max}
+                      
+                      <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
+                            <Activity size={16} />
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dose Maximale</span>
+                        </div>
+                        <p className="text-sm font-bold text-white">{selectedDrug.max}</p>
+                      </div>
+
+                      <div className="p-6 bg-[#008080]/10 rounded-3xl border border-[#008080]/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#008080]/20 flex items-center justify-center text-[#008080]">
+                            <Stethoscope size={16} />
+                          </div>
+                          <span className="text-[10px] font-bold text-[#008080] uppercase tracking-widest">Notes & Précautions</span>
+                        </div>
+                        <p className="text-xs text-gray-300 leading-relaxed italic">"{selectedDrug.notes}"</p>
                       </div>
                     </div>
                   </div>
@@ -436,36 +576,73 @@ export const OutilsTab = () => {
                   <h3 className="text-xl font-bold text-[#1A1A1A] mb-8">Assistant Cas Clinique</h3>
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <input 
-                        type="text" 
-                        placeholder="Âge" 
-                        value={caseData.age}
-                        onChange={(e) => setCaseData({...caseData, age: e.target.value})}
-                        className="bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
-                      />
-                      <select 
-                        value={caseData.sexe}
-                        onChange={(e) => setCaseData({...caseData, sexe: e.target.value})}
-                        className="bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
-                      >
-                        <option value="M">Masculin</option>
-                        <option value="F">Féminin</option>
-                      </select>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">ÂGE</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ex: 5 ans" 
+                          value={caseData.age}
+                          onChange={(e) => setCaseData({...caseData, age: e.target.value})}
+                          className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">SEXE</label>
+                        <select 
+                          value={caseData.sexe}
+                          onChange={(e) => setCaseData({...caseData, sexe: e.target.value})}
+                          className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none"
+                        >
+                          <option value="M">Masculin</option>
+                          <option value="F">Féminin</option>
+                        </select>
+                      </div>
                     </div>
-                    <textarea 
-                      placeholder="Motif de consultation..." 
-                      rows={2}
-                      value={caseData.motif}
-                      onChange={(e) => setCaseData({...caseData, motif: e.target.value})}
-                      className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none"
-                    />
-                    <textarea 
-                      placeholder="Examen clinique & Hypothèses..." 
-                      rows={4}
-                      value={caseData.examen}
-                      onChange={(e) => setCaseData({...caseData, examen: e.target.value})}
-                      className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none"
-                    />
+                    
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">MOTIF DE CONSULTATION</label>
+                      <textarea 
+                        placeholder="Ex: Fièvre persistante et douleurs osseuses..." 
+                        rows={2}
+                        value={caseData.motif}
+                        onChange={(e) => setCaseData({...caseData, motif: e.target.value})}
+                        className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">ANTÉCÉDENTS</label>
+                      <textarea 
+                        placeholder="Ex: Drépanocytose SS connue, hospitalisations antérieures..." 
+                        rows={2}
+                        value={caseData.antecedents}
+                        onChange={(e) => setCaseData({...caseData, antecedents: e.target.value})}
+                        className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">EXAMEN CLINIQUE & HYPOTHÈSES</label>
+                      <textarea 
+                        placeholder="Signes physiques, examens complémentaires, diagnostic suspecté..." 
+                        rows={3}
+                        value={caseData.examen}
+                        onChange={(e) => setCaseData({...caseData, examen: e.target.value})}
+                        className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">TRAITEMENT & ÉVOLUTION</label>
+                      <textarea 
+                        placeholder="Prise en charge initiale et réponse au traitement..." 
+                        rows={2}
+                        value={caseData.traitement}
+                        onChange={(e) => setCaseData({...caseData, traitement: e.target.value})}
+                        className="w-full bg-[#F5F4F0] border-none rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none"
+                      />
+                    </div>
+
                     <button 
                       onClick={handleGenerateCase}
                       disabled={isGeneratingCase || !caseData.motif}
@@ -480,7 +657,34 @@ export const OutilsTab = () => {
                 <div className="bg-[#1A1A1A] p-10 rounded-[40px] text-white shadow-xl overflow-hidden flex flex-col">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="font-bold text-sm">Rapport Structuré (IA)</h3>
-                    <CheckCircle2 size={18} className="text-[#008080]" />
+                    <div className="flex items-center gap-2">
+                      {generatedCase && (
+                        <>
+                          <button 
+                            onClick={copyCaseToClipboard}
+                            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
+                            title="Copier le texte"
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <button 
+                            onClick={exportCasePDF}
+                            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
+                            title="Exporter en PDF"
+                          >
+                            <Download size={14} />
+                          </button>
+                          <button 
+                            onClick={sendToRedaction}
+                            className="p-2 bg-[#008080] hover:bg-[#008080]/80 rounded-lg transition-all"
+                            title="Envoyer vers Rédaction"
+                          >
+                            <Send size={14} />
+                          </button>
+                        </>
+                      )}
+                      <CheckCircle2 size={18} className="text-[#008080]" />
+                    </div>
                   </div>
                   <div className="flex-1 bg-white/5 rounded-2xl p-6 border border-white/10 overflow-y-auto">
                     {isGeneratingCase ? (
@@ -490,11 +694,17 @@ export const OutilsTab = () => {
                       </div>
                     ) : generatedCase ? (
                       <div className="text-xs leading-relaxed text-gray-300 font-medium whitespace-pre-wrap">
-                        {generatedCase}
+                        <ReactMarkdown 
+                          components={{
+                            strong: ({node, ...props}) => <span className="font-bold text-white text-sm block mt-4 mb-2" {...props} />
+                          }}
+                        >
+                          {generatedCase.replace(/__/g, '**')}
+                        </ReactMarkdown>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-center opacity-30">
-                        <FileEdit size={48} className="mb-4" />
+                        <FileIcon size={48} className="mb-4" />
                         <p className="text-xs font-bold uppercase tracking-widest">Saisissez les données pour générer le rapport</p>
                       </div>
                     )}
