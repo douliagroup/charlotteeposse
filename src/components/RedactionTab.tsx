@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext, AcademicDocument } from '@/lib/AppContext';
 import { cn } from '@/lib/utils';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { jsPDF } from "jspdf";
 
 const FONTS = [
@@ -50,18 +50,21 @@ export const RedactionTab = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
+  const [loadedDocId, setLoadedDocId] = useState<string | null>(null);
+
   const activeDoc = documents.find(d => d.id === activeDocId);
 
   useEffect(() => {
-    if (activeDoc) {
+    if (activeDoc && activeDoc.id !== loadedDocId) {
       setTitle(activeDoc.title);
       setContent(activeDoc.content);
       setFontFamily(activeDoc.font_family);
       setFontSize(activeDoc.font_size);
+      setLoadedDocId(activeDoc.id);
     } else if (documents.length > 0 && !activeDocId) {
       setActiveDocId(documents[0].id);
     }
-  }, [activeDocId, documents]);
+  }, [activeDoc, activeDocId, documents, loadedDocId]);
 
   const handleSave = async () => {
     if (!activeDocId) return;
@@ -87,7 +90,7 @@ export const RedactionTab = () => {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Clé API manquante");
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenerativeAI(apiKey);
       
       const systemInstruction = `Tu es un assistant de rédaction académique d'élite pour le Docteur Eposse, pédiatre. 
       Ton rôle est d'améliorer la qualité scientifique et linguistique de ses brouillons.
@@ -103,18 +106,21 @@ export const RedactionTab = () => {
         prompt = `Génère un résumé (Abstract) académique structuré basé sur ce texte :\n\n${content}`;
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: { systemInstruction }
+      const model = ai.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: systemInstruction
       });
 
-      const result = response.text;
-      if (result) {
-        setContent(result);
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      if (text) {
+        setContent(text);
       }
     } catch (error) {
       console.error("AI Redaction Error:", error);
+      alert("Erreur lors de l'appel à l'IA. Veuillez vérifier votre connexion.");
     } finally {
       setIsAiProcessing(false);
     }

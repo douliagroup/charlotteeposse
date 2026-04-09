@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { searchTavilyRaw } from '@/lib/tavilyClient';
 import { useAppContext } from '@/lib/AppContext';
 import ReactMarkdown from 'react-markdown';
@@ -106,7 +106,8 @@ export const OutilsTab = () => {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Clé API manquante");
-      const ai = new GoogleGenAI({ apiKey });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Analyse ces paramètres de croissance pédiatrique :
       Âge : ${growthData.age}
@@ -118,12 +119,11 @@ export const OutilsTab = () => {
       Donne une conclusion sur l'état nutritionnel et le développement staturo-pondéral. 
       Réponds en français académique.`;
       
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
-      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
       
-      setGrowthAnalysis(response.text || "Erreur d'analyse.");
+      setGrowthAnalysis(text || "Erreur d'analyse.");
     } catch (error) {
       console.error("Growth Analysis Error:", error);
     } finally {
@@ -136,7 +136,7 @@ export const OutilsTab = () => {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Clé API manquante");
-      const ai = new GoogleGenAI({ apiKey });
+      const genAI = new GoogleGenerativeAI(apiKey);
       
       const systemInstruction = `Tu es un expert pédiatre et rédacteur scientifique d'élite. 
       Ton rôle est de structurer des cas cliniques pour des publications académiques de haut niveau.
@@ -161,13 +161,16 @@ export const OutilsTab = () => {
       
       Le rapport doit inclure les sections suivantes : __TITRE DU CAS__, __RÉSUMÉ__, __INTRODUCTION__, __PRÉSENTATION DU CAS__, __DISCUSSION__, __CONCLUSION__.`;
       
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: { systemInstruction }
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: systemInstruction
       });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
       
-      setGeneratedCase(response.text || "Erreur de génération.");
+      setGeneratedCase(text || "Erreur de génération.");
     } catch (error) {
       console.error("Case Generation Error:", error);
     } finally {
