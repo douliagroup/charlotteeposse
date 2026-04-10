@@ -16,13 +16,20 @@ import {
   ChevronLeft,
   Search,
   Languages,
-  Wand2
+  Wand2,
+  Quote,
+  Layout,
+  Gauge,
+  X,
+  Copy,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext, AcademicDocument } from '@/lib/AppContext';
 import { cn } from '@/lib/utils';
 import { GoogleGenAI } from "@google/genai";
 import { jsPDF } from "jspdf";
+import ReactMarkdown from 'react-markdown';
 
 const FONTS = [
   { id: 'font-serif', name: 'Serif (Académique)', class: 'font-serif' },
@@ -46,9 +53,17 @@ export const RedactionTab = () => {
   const [fontFamily, setFontFamily] = useState('font-serif');
   const [fontSize, setFontSize] = useState('text-base');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const [activeTool, setActiveTool] = useState<'citation' | 'outline' | 'readability' | null>(null);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  
+  // Tools specific state
+  const [citationInput, setCitationInput] = useState('');
+  const [citationResult, setCitationResult] = useState('');
+  const [outlineResult, setOutlineResult] = useState('');
+  const [readabilityResult, setReadabilityResult] = useState<any>(null);
 
   const [loadedDocId, setLoadedDocId] = useState<string | null>(null);
 
@@ -102,8 +117,8 @@ export const RedactionTab = () => {
     }
   };
 
-  const handleAiAction = async (action: 'correct' | 'improve' | 'summarize') => {
-    if (!content.trim()) return;
+  const handleAiAction = async (action: 'correct' | 'improve' | 'summarize' | 'outline' | 'readability' | 'citation') => {
+    if (!content.trim() && action !== 'citation') return;
     setIsAiProcessing(true);
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
@@ -113,8 +128,7 @@ export const RedactionTab = () => {
       const ai = new GoogleGenAI({ apiKey });
       
       const systemInstruction = `Tu es un assistant de rédaction académique d'élite pour le Docteur Eposse, pédiatre. 
-      Ton rôle est d'améliorer la qualité scientifique et linguistique de ses brouillons.
-      Réponds UNIQUEMENT avec le texte corrigé ou amélioré, sans commentaires.
+      Ton rôle est d'aider à la rédaction, la structuration et le référencement de travaux scientifiques.
       Respecte le ton académique rigoureux.`;
 
       let prompt = "";
@@ -124,6 +138,12 @@ export const RedactionTab = () => {
         prompt = `Améliore le style académique et la précision scientifique de ce texte pour une publication internationale :\n\n${content}`;
       } else if (action === 'summarize') {
         prompt = `Génère un résumé (Abstract) académique structuré basé sur ce texte :\n\n${content}`;
+      } else if (action === 'outline') {
+        prompt = `En te basant sur le contenu actuel ou le titre "${title}", génère un plan détaillé (IMRAD ou autre structure académique pertinente) pour cet article médical. Utilise le format Markdown.`;
+      } else if (action === 'readability') {
+        prompt = `Analyse la lisibilité et la qualité académique de ce texte. Donne un score sur 100 et liste 3 points forts et 3 points d'amélioration. Réponds au format JSON: {"score": number, "pointsForts": [], "pointsAmelioration": [], "commentaire": ""}. Texte:\n\n${content}`;
+      } else if (action === 'citation') {
+        prompt = `Formate cette source en style Vancouver et APA. Source: "${citationInput}". Réponds uniquement avec les deux formats clairement identifiés.`;
       }
 
       const result = await ai.models.generateContent({
@@ -137,7 +157,17 @@ export const RedactionTab = () => {
       const text = result.text;
 
       if (text) {
-        setContent(text);
+        if (action === 'outline') setOutlineResult(text);
+        else if (action === 'readability') {
+          try {
+            const json = JSON.parse(text.replace(/```json|```/g, ''));
+            setReadabilityResult(json);
+          } catch (e) {
+            setReadabilityResult({ score: 0, pointsForts: [], pointsAmelioration: [], commentaire: text });
+          }
+        }
+        else if (action === 'citation') setCitationResult(text);
+        else setContent(text);
       }
     } catch (error) {
       console.error("AI Redaction Error:", error);
@@ -183,11 +213,18 @@ export const RedactionTab = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {documents.map((doc) => (
-                <button
+                <div
                   key={doc.id}
                   onClick={() => setActiveDocId(doc.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setActiveDocId(doc.id);
+                    }
+                  }}
                   className={cn(
-                    "w-full text-left p-4 rounded-2xl transition-all group relative",
+                    "w-full text-left p-4 rounded-2xl transition-all group relative cursor-pointer outline-none",
                     activeDocId === doc.id 
                       ? "bg-[#008080] text-white shadow-lg shadow-[#008080]/20" 
                       : "bg-white border border-[#F5F4F0] text-gray-600 hover:border-[#008080]/30"
@@ -216,7 +253,7 @@ export const RedactionTab = () => {
                       <Trash2 size={14} />
                     </button>
                   )}
-                </button>
+                </div>
               ))}
               {documents.length === 0 && (
                 <div className="text-center py-10">
@@ -296,6 +333,17 @@ export const RedactionTab = () => {
                 {isAiProcessing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                 OPTIMISER
               </button>
+              <button 
+                onClick={() => {
+                  setIsToolsOpen(true);
+                  if (!activeTool) setActiveTool('citation');
+                }}
+                className="flex items-center gap-2 bg-[#1A1A1A] text-white px-4 py-2 rounded-xl text-[11px] font-bold hover:bg-black transition-all"
+                title="Outils académiques avancés"
+              >
+                <Wand2 size={14} />
+                OUTILS
+              </button>
             </div>
 
             <button 
@@ -323,7 +371,7 @@ export const RedactionTab = () => {
         </div>
 
         {/* Editor Content */}
-        <div className="flex-1 p-10 overflow-y-auto bg-white/30">
+        <div className="flex-1 p-10 overflow-y-auto bg-white/30 relative">
           <div className="max-w-4xl mx-auto bg-white min-h-[1000px] shadow-2xl shadow-black/5 rounded-sm p-16 border border-[#E8E5E0]">
             <textarea 
               value={content}
@@ -349,6 +397,165 @@ export const RedactionTab = () => {
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Connecté à Supabase</span>
           </div>
         </div>
+
+        {/* Right Tools Sidebar */}
+        <AnimatePresence>
+          {isToolsOpen && (
+            <motion.div 
+              initial={{ x: 400 }}
+              animate={{ x: 0 }}
+              exit={{ x: 400 }}
+              className="absolute right-0 top-0 bottom-0 w-96 bg-white border-l border-[#E8E5E0] shadow-2xl z-50 flex flex-col"
+            >
+              <div className="p-6 border-b border-[#F5F4F0] flex items-center justify-between">
+                <h3 className="font-bold text-sm text-[#1A1A1A]">Boîte à Outils Académiques</h3>
+                <button 
+                  onClick={() => setIsToolsOpen(false)}
+                  className="p-2 text-gray-400 hover:text-red-500 transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex border-b border-[#F5F4F0]">
+                {[
+                  { id: 'citation', icon: Quote, label: 'Citations' },
+                  { id: 'outline', icon: Layout, label: 'Plan' },
+                  { id: 'readability', icon: Gauge, label: 'Qualité' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTool(t.id as any)}
+                    className={cn(
+                      "flex-1 py-4 flex flex-col items-center gap-1 transition-all border-b-2",
+                      activeTool === t.id 
+                        ? "border-[#008080] text-[#008080] bg-[#008080]/5" 
+                        : "border-transparent text-gray-400 hover:text-gray-600"
+                    )}
+                  >
+                    <t.icon size={18} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {activeTool === 'citation' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1A1A1A] mb-2">Assistant de Citation</h4>
+                      <p className="text-[10px] text-gray-400 mb-4">Entrez le titre, l&apos;auteur ou le DOI pour générer une référence.</p>
+                      <textarea 
+                        value={citationInput}
+                        onChange={(e) => setCitationInput(e.target.value)}
+                        placeholder="Ex: Eposse et al. 2024, Néphroblastome au Cameroun..."
+                        className="w-full bg-[#F5F4F0] border-none rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-[#008080] outline-none resize-none h-24"
+                      />
+                      <button 
+                        onClick={() => handleAiAction('citation')}
+                        disabled={isAiProcessing || !citationInput}
+                        className="w-full mt-4 bg-[#008080] text-white py-3 rounded-xl text-[11px] font-bold hover:bg-black transition-all flex items-center justify-center gap-2"
+                      >
+                        {isAiProcessing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                        GÉNÉRER LA RÉFÉRENCE
+                      </button>
+                    </div>
+
+                    {citationResult && (
+                      <div className="bg-[#F5F4F0] p-4 rounded-2xl border border-[#E8E5E0] relative group">
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(citationResult);
+                            alert("Citations copiées !");
+                          }}
+                          className="absolute right-2 top-2 p-2 bg-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all text-[#008080]"
+                        >
+                          <Copy size={12} />
+                        </button>
+                        <div className="text-[10px] text-gray-600 font-medium whitespace-pre-wrap leading-relaxed">
+                          {citationResult}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTool === 'outline' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1A1A1A] mb-2">Générateur de Plan</h4>
+                      <p className="text-[10px] text-gray-400 mb-4">Analyse votre contenu pour suggérer une structure académique.</p>
+                      <button 
+                        onClick={() => handleAiAction('outline')}
+                        disabled={isAiProcessing}
+                        className="w-full bg-[#008080] text-white py-3 rounded-xl text-[11px] font-bold hover:bg-black transition-all flex items-center justify-center gap-2"
+                      >
+                        {isAiProcessing ? <Loader2 size={14} className="animate-spin" /> : <Layout size={14} />}
+                        GÉNÉRER LE PLAN
+                      </button>
+                    </div>
+
+                    {outlineResult && (
+                      <div className="bg-[#F5F4F0] p-6 rounded-2xl border border-[#E8E5E0] prose prose-xs max-w-none">
+                        <ReactMarkdown>{outlineResult}</ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTool === 'readability' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1A1A1A] mb-2">Analyse de Qualité</h4>
+                      <p className="text-[10px] text-gray-400 mb-4">Évalue la rigueur et la clarté de votre rédaction.</p>
+                      <button 
+                        onClick={() => handleAiAction('readability')}
+                        disabled={isAiProcessing || !content}
+                        className="w-full bg-[#008080] text-white py-3 rounded-xl text-[11px] font-bold hover:bg-black transition-all flex items-center justify-center gap-2"
+                      >
+                        {isAiProcessing ? <Loader2 size={14} className="animate-spin" /> : <Gauge size={14} />}
+                        ANALYSER LE TEXTE
+                      </button>
+                    </div>
+
+                    {readabilityResult && (
+                      <div className="space-y-4">
+                        <div className="bg-[#1A1A1A] p-6 rounded-3xl text-center">
+                          <div className="text-3xl font-bold text-[#008080] mb-1">{readabilityResult.score}/100</div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Score de Qualité Académique</div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+                            <h5 className="text-[10px] font-bold text-green-700 uppercase mb-2">Points Forts</h5>
+                            <ul className="text-[10px] text-green-600 space-y-1 list-disc pl-4">
+                              {readabilityResult.pointsForts?.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                            </ul>
+                          </div>
+                          <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                            <h5 className="text-[10px] font-bold text-amber-700 uppercase mb-2">À Améliorer</h5>
+                            <ul className="text-[10px] text-amber-600 space-y-1 list-disc pl-4">
+                              {readabilityResult.pointsAmelioration?.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-[#F5F4F0] border-t border-[#E8E5E0]">
+                <div className="flex items-center gap-3 text-gray-400">
+                  <BookOpen size={16} />
+                  <p className="text-[9px] font-medium leading-tight">
+                    Ces outils utilisent l&apos;IA pour assister votre rédaction. Vérifiez toujours les faits et les références.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
