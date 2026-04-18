@@ -128,37 +128,42 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('douliamed_user');
   };
 
-  const fetchSupabaseData = async () => {
+ const fetchSupabaseData = async () => {
     try {
-      const fetchTable = async (table: string) => {
-        const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
-        if (error) {
-          console.warn(`Error fetching ${table}:`, error.message);
-          return null;
-        }
-        return data;
-      };
-
-      const [sessionsData, tasksData, sourcesData, eventsData, documentsData] = await Promise.all([
-        fetchTable('sessions'),
-        fetchTable('taches'),
-        fetchTable('sources'),
-        fetchTable('chronogram'),
-        fetchTable('documents')
+      // 1. On lance toutes les requêtes en parallèle pour la performance
+      const [sRes, mRes, tRes, srcRes, eRes, dRes] = await Promise.all([
+        supabase.from('sessions').select('*').order('created_at', { ascending: false }),
+        supabase.from('messages').select('*').order('created_at', { ascending: true }),
+        supabase.from('taches').select('*').order('created_at', { ascending: false }),
+        supabase.from('sources').select('*').order('created_at', { ascending: false }),
+        supabase.from('chronogram').select('*').order('created_at', { ascending: false }),
+        supabase.from('documents').select('*').order('created_at', { ascending: false })
       ]);
 
-      if (sessionsData) setSessions(sessionsData);
-      if (tasksData) {
-        const mappedTasks = tasksData.map((t: any) => ({
-          ...t,
-          completed: t.is_completed ?? false,
-          progress: t.is_completed ? 100 : 0
-        }));
-        setTasks(mappedTasks);
-      }
-      if (sourcesData) setSources(sourcesData);
-      if (eventsData) {
-        const mappedEvents = (eventsData as any[]).map(e => ({
+      // 2. Initialisation sécurisée des données de message
+      const messagesData = mRes.data || [];
+      const sessionsRaw = sRes.data || [];
+
+      // 3. Reconstruction des sessions avec leurs messages (Protection contre le .length undefined)
+      const sessionsWithMessages = sessionsRaw.map(session => ({
+        ...session,
+        messages: messagesData
+          .filter((m: any) => m.session_id === session.id)
+          .map((m: any) => ({
+            id: m.id,
+            text: m.content,
+            sender: m.role === 'assistant' ? 'ai' : 'user',
+            timestamp: m.created_at,
+            file: m.file
+          })) || [] // Force un tableau vide si aucun message n'est trouvé
+      }));
+
+      // 4. Mise à jour de l'état global
+      setSessions(sessionsWithMessages);
+      
+      if (tRes.data) setTasks(tRes.data.map((t: any) => ({ ...t, completed: t.is_completed ?? false, progress: t.is_completed ? 100 : 0 })));
+      if (srcRes.data) setSources(srcRes.data);
+      if (eRes.data) setEvents(eRes.data.map((e: any) => ({
           id: e.id,
           title: e.activity || e.title || '',
           date: e.date || '',
@@ -166,34 +171,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           status: e.is_completed ? "COMPLÉTÉ" : "À VENIR",
           color: e.color || 'bg-blue-400',
           created_at: e.created_at
-        }));
-        setEvents(mappedEvents);
-      }
-      if (documentsData) setDocuments(documentsData);
+      })));
+      if (dRes.data) setDocuments(dRes.data);
 
-      // Fetch messages separately
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (!messagesError && messagesData && sessionsData) {
-        const sessionsWithMessages = (sessionsData as Session[]).map(session => ({
-          ...session,
-          messages: messagesData
-            .filter((m: any) => m.session_id === session.id)
-            .map((m: any) => ({
-              id: m.id,
-              text: m.content,
-              sender: (m.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
-              timestamp: m.created_at,
-              file: m.file
-            }))
-        }));
-        setSessions(sessionsWithMessages);
-      }
     } catch (e) {
-      console.warn("Supabase fetch failed", e);
+      console.error("Erreur critique de synchronisation Supabase :", e);
     } finally {
       setIsLoading(false);
     }
