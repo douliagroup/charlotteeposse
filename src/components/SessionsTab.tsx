@@ -31,8 +31,8 @@ export const SessionsTab = () => {
   };
 
   const filteredSessions = sessions.filter(s => 
-    s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.tag.toLowerCase().includes(searchQuery.toLowerCase())
+    (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (s.tag || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -87,7 +87,8 @@ export const SessionsTab = () => {
                   <div className="w-6 h-6 rounded-full bg-[#F5F4F0] flex items-center justify-center">
                     <MessageSquare size={12} className="text-gray-400" />
                   </div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">{session.messages.length} MESSAGES</span>
+                  {/* CORRECTION ICI : Ajout de la protection || [] pour éviter l'écran blanc */}
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">{(session.messages || []).length} MESSAGES</span>
                 </div>
                 <button className="text-[#008080] text-[11px] font-bold hover:underline tracking-widest">OUVRIR</button>
               </div>
