@@ -19,6 +19,7 @@ import {
   PenTool
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppContext } from '@/lib/AppContext';
 
 // --- NAVIGATION CONFIG ---
 const navigation = [
@@ -35,8 +36,8 @@ const navigation = [
   { id: 'settings', name: 'Paramètres', icon: Settings },
 ];
 
-// --- MOCK DATA ---
-const history = [
+// --- MOCK DATA (Fallback) ---
+const defaultHistory = [
   { id: 1, title: 'Hypertension artérielle résistante', date: '2026-03-24' },
   { id: 2, title: 'Microbiote intestinal et maladies inflam...', date: '2026-03-23' },
   { id: 3, title: 'Oncologie pédiatrique : protocoles 2026', date: '2026-03-22' },
@@ -49,10 +50,11 @@ interface SidebarProps {
   setIsCollapsed: (collapsed: boolean) => void;
 }
 
-import { useAppContext } from '@/lib/AppContext';
-
 export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }: SidebarProps) => {
-  const { logout } = useAppContext();
+  const { logout, sessions } = useAppContext();
+  
+  // Sécurité : Utiliser les sessions réelles ou le mock si vide, avec protection contre undefined
+  const historyItems = (sessions && sessions.length > 0) ? sessions.slice(0, 5) : defaultHistory;
   
   return (
     <>
@@ -60,7 +62,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
       <aside className={cn(
         "flex h-screen bg-white/10 backdrop-blur-2xl border-r border-[#008080]/10 flex-col shadow-2xl transition-all duration-300",
         isCollapsed ? "w-[80px]" : "w-[240px]",
-        "w-[240px] md:w-auto" // Ensure fixed width on mobile when open
+        "w-[240px] md:w-auto"
       )}>
         {/* Header */}
         <div className={cn("p-5 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
@@ -74,7 +76,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
                 referrerPolicy="no-referrer"
               />
             </div>
-            {(!isCollapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
+            {(!isCollapsed || (typeof window !== 'undefined' && window.innerWidth < 768)) && (
               <div>
                 <h1 className="font-bold text-sm leading-tight text-[#1A1A1A]">DouliaMed</h1>
                 <p className="text-[10px] text-[#008080] font-bold uppercase tracking-wider">Assistant Médical</p>
@@ -82,7 +84,6 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
             )}
           </div>
           
-          {/* Collapse toggle (Desktop only) */}
           <div className="hidden md:block">
             {!isCollapsed && (
               <button 
@@ -117,9 +118,9 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Sécurisé avec navigation?.map */}
         <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto scrollbar-hide">
-          {navigation.map((item) => (
+          {(navigation || []).map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -137,7 +138,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
             </button>
           ))}
 
-          {/* History Section */}
+          {/* History Section - Sécurisé avec historyItems?.map */}
           {!isCollapsed && (
             <div className="mt-8 pt-8 border-t border-[#F5F4F0]">
               <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Historique</p>
@@ -152,10 +153,10 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
                 </div>
               </div>
               <div className="space-y-1">
-                {history.map((item) => (
+                {(historyItems || []).map((item: any) => (
                   <button key={item.id} className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#F5F4F0] group transition-colors">
                     <p className="text-[11px] font-bold text-gray-700 truncate group-hover:text-[#1A1A1A]">{item.title}</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5">{item.date}</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5">{item.date || item.timestamp}</p>
                   </button>
                 ))}
               </div>
@@ -186,7 +187,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
             </div>
             {!isCollapsed && (
               <button 
-                onClick={() => logout()}
+                onClick={() => logout && logout()}
                 className="text-gray-400 hover:text-red-500 transition-colors"
               >
                 <LogOut size={16} />
@@ -198,7 +199,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#008080]/10 flex items-center justify-around px-2 z-[100] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {navigation.slice(0, 5).map((item) => (
+        {(navigation || []).slice(0, 5).map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
@@ -208,7 +209,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }
             )}
           >
             <item.icon size={20} className={activeTab === item.id ? "text-[#008080]" : "text-gray-400"} />
-            <span className="text-[8px] font-bold uppercase tracking-tighter">{item.name.split(' ')[0]}</span>
+            <span className="text-[8px] font-bold uppercase tracking-tighter">{item.name ? item.name.split(' ')[0] : ''}</span>
           </button>
         ))}
         <button
