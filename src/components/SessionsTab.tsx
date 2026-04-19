@@ -30,9 +30,10 @@ export const SessionsTab = () => {
     setNewSessionNote('');
   };
 
-  const filteredSessions = sessions.filter(s => 
-    s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.tag.toLowerCase().includes(searchQuery.toLowerCase())
+  // CORRECTION 1 : Sécurisation du filtre au cas où sessions est undefined ou si tag/title sont absents
+  const filteredSessions = (sessions || []).filter(s => 
+    (s?.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
+    (s?.tag?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -77,17 +78,18 @@ export const SessionsTab = () => {
               className="bg-white p-6 rounded-[32px] border border-[#E8E5E0] shadow-sm hover:shadow-xl transition-all cursor-pointer group"
             >
               <div className="flex justify-between items-start mb-6">
-                <span className="px-3 py-1 bg-[#E6F2F2] text-[#008080] text-[10px] font-bold rounded-full uppercase tracking-widest">{session.tag}</span>
-                <span className="text-[10px] text-gray-400 font-bold">{session.date}</span>
+                <span className="px-3 py-1 bg-[#E6F2F2] text-[#008080] text-[10px] font-bold rounded-full uppercase tracking-widest">{session?.tag || 'SESSION'}</span>
+                <span className="text-[10px] text-gray-400 font-bold">{session?.date || ''}</span>
               </div>
-              <h3 className="font-bold text-base text-[#1A1A1A] mb-3 group-hover:text-[#008080] transition-colors">{session.title}</h3>
-              <p className="text-xs text-gray-500 line-clamp-3 mb-8 leading-relaxed font-medium">{session.desc}</p>
+              <h3 className="font-bold text-base text-[#1A1A1A] mb-3 group-hover:text-[#008080] transition-colors">{session?.title || 'Sans titre'}</h3>
+              <p className="text-xs text-gray-500 line-clamp-3 mb-8 leading-relaxed font-medium">{session?.desc || ''}</p>
               <div className="items-center flex justify-between pt-5 border-t border-[#F5F4F0]">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-[#F5F4F0] flex items-center justify-center">
                     <MessageSquare size={12} className="text-gray-400" />
                   </div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">{session.messages.length} MESSAGES</span>
+                  {/* CORRECTION 2 : Sécurisation de la longueur des messages */}
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">{session?.messages?.length || 0} MESSAGES</span>
                 </div>
                 <button className="text-[#008080] text-[11px] font-bold hover:underline tracking-widest">OUVRIR</button>
               </div>
