@@ -68,8 +68,11 @@ export const ChatTab = () => {
       // Step 1: Web Research with Tavily
       let webContext = '';
       if (currentInput.trim().length > 5) {
+        // Clean query for better search results
         let searchQuery = currentInput.trim();
+        // Remove common test prefixes
         searchQuery = searchQuery.replace(/test d'actualité\s*:\s*/gi, '');
+        // If it's very long, take the first 100 characters to avoid confusing Tavily
         if (searchQuery.length > 200) {
           searchQuery = searchQuery.substring(0, 200);
         }
@@ -80,31 +83,29 @@ export const ChatTab = () => {
 
       setStatusMessage("DouliaMed synthétise les données pour le Docteur Eposse...");
 
-      // Step 2: Knowledge Base Context (RAG) - Sécurisé
-      const safeSources = sources || [];
-      const sourcesContext = safeSources.length > 0 
-        ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${safeSources.map(s => `- ${s.title}: ${s.cat}`).join('\n')}\n`
+      // Step 2: Knowledge Base Context (RAG)
+      const sourcesContext = sources.length > 0 
+        ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${sources.map(s => `- ${s.title}: ${s.cat}`).join('\n')}\n`
         : '';
       
-      const safeTasks = tasks || [];
-      const tasksContext = safeTasks.length > 0
-        ? `\n\n--- TÂCHES EN COURS ---\n${safeTasks.filter(t => !t.completed).map(t => `- ${t.title} (Échéance: ${t.date})`).join('\n')}\n`
+      const tasksContext = tasks.length > 0
+        ? `\n\n--- TÂCHES EN COURS ---\n${tasks.filter(t => !t.completed).map(t => `- ${t.title} (Échéance: ${t.date})`).join('\n')}\n`
         : '';
 
       const sessionContext = activeSession?.note 
         ? `CONTEXTE DE LA SESSION : ${activeSession.note}\n\n` 
         : '';
 
-      // Step 3: Call API Route - Historique sécurisé
+      // Step 3: Call API Route
       const apiResponse = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: currentInput,
-          history: (activeSession?.messages || []).map(m => ({
+          history: activeSession?.messages.map(m => ({
             role: m.sender === 'user' ? 'user' : 'model',
             content: m.text
-          })),
+          })) || [],
           sessionContext,
           sourcesContext,
           tasksContext,
@@ -165,6 +166,8 @@ export const ChatTab = () => {
     
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => {
+      // If we are still supposed to be listening, restart it
+      // This ensures it doesn't stop "tout seul"
       if (isListening) {
         recognition.start();
       } else {
@@ -209,7 +212,7 @@ export const ChatTab = () => {
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.setTextColor(0, 128, 128);
+    doc.setTextColor(0, 128, 128); // Teal color
     doc.text("DouliaMed - Rapport Médical", 20, 20);
     
     doc.setFont("helvetica", "normal");
@@ -299,9 +302,6 @@ export const ChatTab = () => {
     );
   }
 
-  // Protection vitale : on s'assure d'avoir toujours un tableau de messages valide
-  const safeMessages = activeSession?.messages || [];
-
   return (
     <div className="flex flex-col h-full bg-[#F5F4F0]">
       {/* Chat Header */}
@@ -328,8 +328,7 @@ export const ChatTab = () => {
 
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5 scroll-smooth">
-        {/* Vérification sécurisée du statut vide */}
-        {safeMessages.length === 0 && (
+        {activeSession?.messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
             <div className="w-28 h-28 rounded-[32px] mb-6 overflow-hidden relative shadow-2xl bg-white border border-[#008080]/10 p-4">
               <Image 
@@ -344,8 +343,7 @@ export const ChatTab = () => {
           </div>
         )}
         <AnimatePresence initial={false}>
-          {/* Boucle sécurisée sur les messages */}
-          {safeMessages.map((msg) => (
+          {activeSession?.messages.map((msg) => (
             <motion.div 
               key={msg.id}
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
