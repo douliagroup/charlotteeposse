@@ -19,7 +19,7 @@ import { jsPDF } from "jspdf";
 import { cn } from '@/lib/utils';
 import { useAppContext, Message } from '@/lib/AppContext';
 import { searchTavily } from '@/lib/tavilyClient';
-import { supabase } from '@/lib/supabaseClient'; // <-- IMPORT SUPABASE AJOUTÉ
+import { supabase } from '@/lib/supabaseClient';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mammoth from 'mammoth';
@@ -27,7 +27,6 @@ import mammoth from 'mammoth';
 export const ChatTab = () => {
   const { activeSessionId, sessions, addMessageToSession, sources, tasks, setActiveTab } = useAppContext();
   
-  // CORRECTION 1 : Sécuriser la recherche de la session (si sessions est undefined)
   const activeSession = (sessions || []).find(s => s.id === activeSessionId);
   
   const [inputValue, setInputValue] = useState('');
@@ -35,7 +34,6 @@ export const ChatTab = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ name: string; data: string; mimeType: string; extractedText?: string } | null>(null);
   
-  // NOUVEL ÉTAT : Pour stocker le fichier brut avant de l'envoyer sur Supabase
   const [pendingFile, setPendingFile] = useState<File | null>(null); 
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -51,7 +49,6 @@ export const ChatTab = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const handleSend = async () => {
-    // Sécurité modifiée pour inclure pendingFile
     if ((!inputValue.trim() && !attachedFile && !pendingFile) || isLoading || !activeSessionId) return;
     
     setIsLoading(true);
@@ -60,14 +57,12 @@ export const ChatTab = () => {
     let finalFileMeta = attachedFile;
 
     try {
-      // --- NOUVELLE LOGIQUE D'UPLOAD SUPABASE ---
       if (pendingFile) {
         setStatusMessage("Téléchargement du document vers le Cloud...");
-        const fileExt = pendingFile.name.split('.').pop();
+        const fileExt = pendingFile.name.split('.').pop() || 'file';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `${activeSessionId}/${fileName}`;
 
-        // Upload vers le bucket
         const { error: uploadError } = await supabase.storage
           .from('chat_documents')
           .upload(filePath, pendingFile);
@@ -77,18 +72,20 @@ export const ChatTab = () => {
            throw new Error("Échec de la sauvegarde du fichier sur le serveur.");
         }
 
-        // Récupération de l'URL publique
         const { data: urlData } = supabase.storage
           .from('chat_documents')
           .getPublicUrl(filePath);
 
-        // On remplace la donnée vide par l'URL publique de Supabase ! 
-        // L'application va stocker une petite URL au lieu de 5 Mo de Base64.
         if (finalFileMeta) {
           finalFileMeta.data = urlData.publicUrl; 
+        } else {
+          finalFileMeta = {
+            name: pendingFile.name,
+            data: urlData.publicUrl,
+            mimeType: pendingFile.type
+          };
         }
       }
-      // ------------------------------------------
 
       const userMsg: Message = { 
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
@@ -105,18 +102,14 @@ export const ChatTab = () => {
       
       setInputValue('');
       setAttachedFile(null);
-      setPendingFile(null); // On vide le fichier en attente
+      setPendingFile(null);
       
       setStatusMessage("DouliaMed consulte vos sources et le web...");
 
-      // Step 1: Web Research with Tavily
       let webContext = '';
       if (currentInput.trim().length > 5) {
-        // Clean query for better search results
         let searchQuery = currentInput.trim();
-        // Remove common test prefixes
         searchQuery = searchQuery.replace(/test d'actualité\s*:\s*/gi, '');
-        // If it's very long, take the first 100 characters to avoid confusing Tavily
         if (searchQuery.length > 200) {
           searchQuery = searchQuery.substring(0, 200);
         }
@@ -127,7 +120,6 @@ export const ChatTab = () => {
 
       setStatusMessage("DouliaMed synthétise les données pour le Docteur Eposse...");
 
-      // CORRECTION 2 : Sécuriser la lecture des sources et des tâches
       const sourcesContext = (sources || []).length > 0 
         ? `\n\n--- BASE DE CONNAISSANCES (SOURCES) ---\n${(sources || []).map(s => `- ${s.title}: ${s.cat}`).join('\n')}\n`
         : '';
@@ -140,13 +132,11 @@ export const ChatTab = () => {
         ? `CONTEXTE DE LA SESSION : ${activeSession.note}\n\n` 
         : '';
 
-      // Step 3: Call API Route
       const apiResponse = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: currentInput,
-          // CORRECTION 3 : Sécuriser le mappage de l'historique
           history: (activeSession?.messages || []).map(m => ({
             role: m.sender === 'user' ? 'user' : 'model',
             content: m.text
@@ -174,11 +164,12 @@ export const ChatTab = () => {
       };
       
       await addMessageToSession(activeSessionId, aiMsg);
-    } catch (error: any) {
-      console.error("Chat Error:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Chat Error:", err);
       const errorMsg: Message = { 
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
-        text: `ERREUR : ${error.message || "Une erreur est survenue lors de l'analyse. Veuillez vérifier votre connexion ou le format du fichier."}`, 
+        text: `ERREUR : ${err.message || "Une erreur est survenue lors de l'analyse."}`, 
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
@@ -192,6 +183,7 @@ export const ChatTab = () => {
   const recognitionRef = useRef<any>(null);
 
   const handleSTT = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.warn("Votre navigateur ne supporte pas la reconnaissance vocale.");
@@ -218,6 +210,7 @@ export const ChatTab = () => {
       }
     };
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
       let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -230,6 +223,7 @@ export const ChatTab = () => {
       }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onerror = (event: any) => {
       console.error("Speech Recognition Error:", event.error);
       setIsListening(false);
@@ -277,7 +271,7 @@ export const ChatTab = () => {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPendingFile(file); // ON CONSERVE LE FICHIER POUR SUPABASE
+      setPendingFile(file); 
       const reader = new FileReader();
       
       if (file.name.endsWith('.docx')) {
@@ -287,7 +281,7 @@ export const ChatTab = () => {
             const result = await mammoth.extractRawText({ arrayBuffer });
             setAttachedFile({
               name: file.name,
-              data: "", // PLUS DE BASE 64 ! La mémoire respire.
+              data: "", 
               mimeType: file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
               extractedText: result.value
             });
@@ -302,17 +296,16 @@ export const ChatTab = () => {
           const text = event.target?.result as string;
           setAttachedFile({
             name: file.name,
-            data: "", // PLUS DE BASE 64 !
+            data: "", 
             mimeType: 'text/csv',
             extractedText: text
           });
         };
         reader.readAsText(file);
       } else {
-        // Pour les PDFs et Images, on configure juste les métadonnées sans Base64
         setAttachedFile({
           name: file.name,
-          data: "", // PLUS DE BASE 64 ! L'URL Supabase prendra le relai.
+          data: "", 
           mimeType: file.type
         });
       }
@@ -363,7 +356,6 @@ export const ChatTab = () => {
 
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5 scroll-smooth">
-        {/* CORRECTION 4 : Sécurisation de la longueur du tableau au cas où il serait undefined */}
         {(activeSession?.messages?.length || 0) === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
             <div className="w-28 h-28 rounded-[32px] mb-6 overflow-hidden relative shadow-2xl bg-white border border-[#008080]/10 p-4">
@@ -379,7 +371,6 @@ export const ChatTab = () => {
           </div>
         )}
         <AnimatePresence initial={false}>
-          {/* CORRECTION 5 : Sécurisation du mappage des messages */}
           {(activeSession?.messages || []).map((msg) => (
             <motion.div 
               key={msg.id}
@@ -450,4 +441,78 @@ export const ChatTab = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-white/40 backdrop-blur-
+      <div className="p-6 bg-white/40 backdrop-blur-xl border-t border-[#008080]/10 shadow-[0_-4px_30px_rgba(0,0,0,0.03)]">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 mb-3">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleUpload}
+              accept="image/*,application/pdf,text/csv,.csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/msword,.doc"
+            />
+            {attachedFile ? (
+              <div className="flex items-center gap-2 bg-[#008080]/10 text-[#008080] text-[10px] font-bold px-3 py-1 rounded-full border border-[#008080]/20">
+                {attachedFile.name.endsWith('.csv') ? <FileSpreadsheet size={12} /> : attachedFile.name.endsWith('.docx') || attachedFile.name.endsWith('.doc') ? <FileCode size={12} /> : <FileText size={12} />}
+                <span className="max-w-[120px] truncate">{attachedFile.name}</span>
+                <button onClick={() => { setAttachedFile(null); setPendingFile(null); }} className="hover:text-red-500 ml-1 text-xs">×</button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 text-[#008080] text-[10px] font-bold hover:bg-[#008080]/10 px-3 py-1 rounded-full transition-all border border-[#008080]/10"
+              >
+                <Upload size={12} />
+                TÉLÉVERSER DOCUMENTS (PDF, WORD, CSV, IMAGE)
+              </button>
+            )}
+          </div>
+
+          <div className="relative flex items-start gap-2">
+            <div className="relative flex-1">
+              <textarea 
+                ref={textareaRef}
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+                  }
+                }}
+                placeholder="Posez votre question médicale ou analysez un document..." 
+                rows={1}
+                className="w-full bg-white/50 border border-[#008080]/10 rounded-xl py-3 px-4 pr-10 text-[13px] font-medium focus:ring-2 focus:ring-[#008080] outline-none transition-all placeholder:text-gray-400 shadow-inner resize-none min-h-[46px] max-h-[300px] overflow-y-auto"
+              />
+              <button 
+                onClick={handleSTT}
+                className={cn(
+                  "absolute right-2.5 top-[13px] p-1 rounded-lg transition-all",
+                  isListening ? "bg-red-500 text-white animate-pulse" : "text-gray-400 hover:text-[#008080] hover:bg-white"
+                )}
+              >
+                <Mic size={16} />
+              </button>
+            </div>
+            <button 
+              onClick={() => {
+                handleSend();
+                if (textareaRef.current) textareaRef.current.style.height = 'auto';
+              }}
+              disabled={(!inputValue.trim() && !attachedFile && !pendingFile) || isLoading}
+              className="bg-[#008080] text-white p-3 rounded-xl hover:bg-black transition-all shadow-lg shadow-[#008080]/20 disabled:opacity-50 disabled:shadow-none min-w-[46px] flex items-center justify-center mt-0.5"
+            >
+              {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            </button>
+          </div>
+          <p className="text-center mt-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">propulsé par doulia</p>
+        </div>
+      </div>
+    </div>
+  );
+};
