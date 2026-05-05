@@ -1,160 +1,37 @@
-import { GoogleGenAI } from "@google/genai";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-export async function POST(req: Request) {
-  try {
-    const { message, history, sessionContext, sourcesContext, tasksContext, webContext, file } = await req.json();
+const supabaseUrl = 'https://your.supabase.url'; // Replace with your Supabase URL
+const supabaseKey = 'your-supabase-key'; // Replace with your Supabase Anon Key
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Utilisation de la variable d'environnement standard de la plateforme
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    
-    if (!apiKey) {
-       return NextResponse.json({ error: "Clé API Gemini manquante. Veuillez configurer NEXT_PUBLIC_GEMINI_API_KEY." }, { status: 500 });
+export async function GET(request) {
+    const { searchParams } = new URL(request.url);
+    const filePath = searchParams.get('file'); // get file path from query params
+
+    if (!filePath) {
+        return NextResponse.json({ error: 'File path is required' }, { status: 400 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const currentDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const systemInstruction = `
-      Date du jour : ${currentDate}.
-      TU ES DOULIAMED, l'intelligence médicale exclusive et le partenaire d'excellence académique du Docteur Charlotte Eposse, pédiatre et enseignante-chercheuse à Douala.
-      Tu as été conçu et développé par DOULIA, Cabinet Conseil et solutions Digitales, basée à Douala, Cameroun.
-      
-      MISSION PRIORITAIRE : VEILLE SCIENTIFIQUE PÉDIATRIQUE
-      - Ta mission principale est d'assurer une veille scientifique de haut niveau pour le Docteur Eposse.
-      - Pour toute question médicale, tu dois impérativement rechercher des sources récentes et faisant autorité (PubMed, revues internationales comme The Lancet, NEJM, Pediatrics, etc.).
-      - Tu dois présenter chaque source trouvée sous la forme exacte suivante : [Titre de l'étude](URL) - Brève conclusion.
-      
-      TON ET POSTURE :
-      - Expert en recherche clinique : précis, rigoureux, factuel et académique.
-      - Partenaire de réflexion et coach qui gère le chronogramme du Docteur Eposse.
-      - Tu assures la continuité de sa pensée et la portes vers l'excellence par des encouragements constants.
-      
-      RÈGLE ABSOLUE SUR L'ACTUALITÉ ET LA RECHERCHE WEB :
-      - Pour TOUTE question sur des faits récents, des personnalités en poste, ou des publications scientifiques de l'année en cours, tu dois EXCLUSIVEMENT te baser sur le webContext fourni.
-      - IMPORTANT : Si le webContext contient des informations datées de 2024 ou 2025 alors que nous sommes en 2026, considère ces informations comme les PLUS RÉCENTES DISPONIBLES. Ne tente JAMAIS d'inventer des faits pour 2026 si le webContext ne les mentionne pas explicitement.
-      - Si le webContext est vide ou insuffisant pour répondre avec certitude, dis-le clairement : "Docteur, mes recherches actuelles ne me permettent pas de confirmer cette information pour l'année en cours."
-      
-      RÈGLES DE RÉDACTION (OPTIMISATION TTS) :
-      - NE JAMAIS utiliser d'astérisques (*), de dièses (#), de tirets (-) ou de listes à puces classiques.
-      - Rédige des paragraphes élégants et directs qui s'écoutent comme un discours.
-      - Sépare chaque grande idée par deux sauts de ligne complets (\n\n) pour imposer des pauses naturelles.
-      - Utilise UNIQUEMENT le gras (syntaxe __mot__) pour souligner les mots-clés essentiels ou les titres de sections.
-      - Intègre les sources naturellement dans le récit en respectant le format demandé.
-      - FORMATAGE DES RÉPONSES (Tableaux) : Désormais, quand tu compares des données, des études ou des axes de recherche, tu DOIS utiliser des tableaux Markdown pour une lecture structurée.
-      
-      NAVIGATION ET FONCTIONNALITÉS DE DOULIAMED :
-      Tu dois souvent référer le Docteur Eposse aux pages spécifiques de l'application pour approfondir son travail :
-      1. VEILLE PÉDIATRIQUE : Pour consulter les dernières publications scientifiques mondiales traduites et synthétisées par l'IA. C'est ici que se trouve la veille stratégique automatisée.
-      2. OUTILS & RECHERCHE : Une suite d'outils cliniques et académiques incluant :
-         - CALCULATEUR DE DOSE : Désormais enrichi d'une vaste bibliothèque de médicaments pédiatriques (incluant la drépanocytose). Il propose une recherche par filtre, des calculs précis et des __Notes & Précautions__ de sécurité pour chaque molécule.
-         - ANALYSE DE CROISSANCE : Interprétation des Z-scores (Poids, Taille, PC) selon l'OMS.
-         - SCORES CLINIQUES : Calcul automatique des scores d'Apgar et de Silverman.
-         - ASSISTANT CAS CLINIQUE : Génération de rapports structurés (Titre, Résumé, Introduction, etc.) sans symboles superflus, prêts pour publication. Permet l'export PDF, la copie rapide et l'envoi direct vers l'onglet __Rédaction__.
-         - RECHERCHE PUBMED : Accès direct à la base de données PubMed.
-      3. RÉDACTION : Un espace dédié à la rédaction de ses brouillons officiels. Il permet de gérer des documents, de choisir la police et la taille du texte, d'utiliser l'IA pour corriger ou optimiser le style académique, et de sauvegarder le travail sur Supabase.
-      4. CHRONOGRAMME : Pour la planification stratégique de sa carrière et de son agrégation.
-      5. GESTIONNAIRE DE TÂCHES : Pour suivre l'avancement de ses projets de recherche.
-      6. VISUALISATION : Pour l'analyse visuelle des données avec support d'import/export CSV et interprétation IA des graphiques.
-      7. SESSIONS : Pour retrouver l'historique de ses réflexions.
-      8. CHAT IA : Supporte désormais l'analyse de fichiers __CSV, Word, PDF et Images__ pour une assistance multidimensionnelle.
-      
-      CONTEXTE (SUPABASE) :
-      ${sessionContext || ""}
-      ${sourcesContext || ""}
-      ${tasksContext || ""}
-      
-      CONTEXTE WEB (TAVILY) :
-      ${webContext || "Aucun résultat de recherche web disponible pour cette requête."}
-    `;
+    // Fetch file from Supabase storage
+    const { data, error } = await supabase.storage.from('your-bucket').download(filePath);
 
-    const contents: any[] = [];
-    
-    // Add history if available
-    if (history && history.length > 0) {
-      history.forEach((h: any) => {
-        contents.push({
-          role: h.role,
-          parts: [{ text: h.content }]
-        });
-      });
+    if (error) {
+        return NextResponse.json({ error: 'Error downloading file: ' + error.message }, { status: 500 });
     }
 
-    const parts: any[] = [{ text: message || "Analyse ce document." }];
+    const arrayBuffer = await data.arrayBuffer();
+    const base64String = Buffer.from(arrayBuffer).toString('base64');
 
-    if (file) {
-      if (file.extractedText) {
-        parts[0].text += `\n\nCONTENU DU DOCUMENT (${file.name}) :\n${file.extractedText}`;
-      } else {
-        parts.push({
-          inlineData: {
-            data: file.data,
-            mimeType: file.mimeType
-          }
-        });
-      }
-    }
-
-    contents.push({
-      role: 'user',
-      parts: parts
+    // Send Base64 string to Gemini API (pseudo code)
+    const geminiResponse = await fetch('https://api.gemini.com/v1/your-endpoint', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileContent: base64String }),
     });
 
-    // Retry logic for 503 errors
-    let response;
-    let retries = 0;
-    const maxRetries = 3; // Increased retries
-    
-    while (retries <= maxRetries) {
-      try {
-        response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: contents,
-          config: {
-            systemInstruction,
-            temperature: 0.7,
-            topP: 0.95,
-            topK: 40,
-          }
-        });
-        break; // Success
-      } catch (err: any) {
-        const errStr = err.message || "";
-        if (errStr.includes("503") || errStr.includes("UNAVAILABLE") || errStr.includes("high demand") || errStr.includes("overloaded") || errStr.includes("deadline exceeded") || errStr.includes("429") || errStr.includes("quota")) {
-          retries++;
-          if (retries > maxRetries) throw err;
-          // Wait before retrying (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 1500 * Math.pow(2, retries)));
-        } else {
-          throw err;
-        }
-      }
-    }
-
-    const text = response?.text;
-
-    return NextResponse.json({ text });
-  } catch (error: any) {
-    console.error("API Chat Error:", error);
-    
-    let errorMessage = error.message || "Une erreur inconnue est survenue.";
-    
-    // Clean up Gemini API error messages if they are JSON strings
-    try {
-      if (typeof errorMessage === 'string' && (errorMessage.startsWith('{') || errorMessage.includes('"error":'))) {
-        const parsedError = JSON.parse(errorMessage.substring(errorMessage.indexOf('{')));
-        if (parsedError.error?.message) {
-          errorMessage = parsedError.error.message;
-        }
-      }
-    } catch (e) {
-      // Ignore parsing errors
-    }
-
-    if (errorMessage.includes("503") || errorMessage.includes("UNAVAILABLE") || errorMessage.includes("high demand")) {
-      errorMessage = "DouliaMed est actuellement très sollicité. Veuillez patienter quelques instants et réessayer votre requête.";
-    }
-
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
-  }
+    const responseData = await geminiResponse.json();
+    return NextResponse.json(responseData);
 }
