@@ -150,11 +150,30 @@ export const ChatTab = () => {
       });
 
       if (!apiResponse.ok) {
-        const errorData = await apiResponse.json();
-        throw new Error(errorData.error || "Erreur lors de l'appel API");
+        const errorText = await apiResponse.text();
+        let errorMessage = "Docteur, le document est trop volumineux ou l'analyse a pris trop de temps (Timeout serveur). Essayez de poser une question plus ciblée.";
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error) {
+            errorMessage = errorJson.error;
+          }
+        } catch (e) {
+          // Si on ne peut pas parser le JSON, c'est probablement une erreur HTML Vercel (504 Timeout)
+          // On garde notre message d'erreur clair pour le docteur.
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      const data = await apiResponse.json();
+      const responseText = await apiResponse.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error("Docteur, le document est trop volumineux pour une analyse directe. Essayez de poser une question plus ciblée.");
+      }
 
       const aiMsg: Message = { 
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 

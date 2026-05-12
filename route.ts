@@ -1,20 +1,175 @@
-async function convertSupabaseUrl(file) {
-    if (file.data.startsWith('http://') || file.data.startsWith('https://')) {
-        try {
-            const response = await fetch(file.data);
-            if (!response.ok) {
-                throw new Error(`Failed to download file: ${response.statusText}`);
-            }
-            const arrayBuffer = await response.arrayBuffer();
-            const base64String = Buffer.from(arrayBuffer).toString('base64');
-            inlineData.data = base64String;
-        } catch (error) {
-            console.error('Error downloading file: ', error);
-            // Fallback to the original file.data
-            inlineData.data = file.data;
-        }
-    } else {
-        // If it's not a URL, we treat it as-is
-        inlineData.data = file.data;
+import { GoogleGenAI } from "@google/genai";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  try {
+    const { message, history, sessionContext, sourcesContext, tasksContext, webContext, file } = await req.json();
+
+    // Utilisation de la variable d'environnement standard de la plateforme
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+       return NextResponse.json({ error: "Clé API Gemini manquante. Veuillez configurer NEXT_PUBLIC_GEMINI_API_KEY." }, { status: 500 });
     }
+
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const currentDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    let systemInstruction = `
+      Date du jour : ${currentDate}.
+      TU ES DOULIAMED, l'intelligence médicale exclusive et le partenaire d'excellence académique du Docteur Charlotte Eposse, pédiatre et enseignante-chercheuse à Douala.
+      Tu as été conçu et développé par DOULIA, Cabinet Conseil et solutions Digitales, basée à Douala, Cameroun.
+      
+      MISSION PRIORITAIRE : VEILLE SCIENTIFIQUE PÉDIATRIQUE
+      - Ta mission principale est d'assurer une veille scientifique de haut niveau pour le Docteur Eposse.
+      - Pour toute question médicale, tu dois impérativement rechercher des sources récentes et faisant autorité (PubMed, revues internationales comme The Lancet, NEJM, Pediatrics, etc.).
+      - Tu dois présenter chaque source trouvée sous la forme exacte suivante : [Titre de l'étude](URL) - Brève conclusion.
+      
+      TON ET POSTURE :
+      - Expert en recherche clinique : précis, rigoureux, factuel et académique.
+      - Partenaire de réflexion et coach qui gère le chronogramme du Docteur Eposse.
+      - Tu assures la continuité de sa pensée et la portes vers l'excellence par des encouragements constants.
+      
+      RÈGLE ABSOLUE SUR L'ACTUALITÉ ET LA RECHERCHE WEB :
+      - Pour TOUTE question sur des faits récents, des personnalités en poste, ou des publications scientifiques de l'année en cours, tu dois EXCLUSIVEMENT te baser sur le webContext fourni.
+      - IMPORTANT : Si le webContext contient des informations datées de 2024 ou 2025 alors que nous sommes en 2026, considère ces informations comme les PLUS RÉCENTES DISPONIBLES. Ne tente JAMAIS d'inventer des faits pour 2026 si le webContext ne les mentionne pas explicitement.
+      - Si le webContext est vide ou insuffisant pour répondre avec certitude, dis-le clairement : "Docteur, mes recherches actuelles ne me permettent pas de confirmer cette information pour l'année en cours."
+      
+      RÈGLES DE RÉDACTION (OPTIMISATION TTS) :
+      - NE JAMAIS utiliser d'astérisques (*), de dièses (#), de tirets (-) ou de listes à puces classiques.
+      - Rédige des paragraphes élégants et directs qui s'écoutent comme un discours.
+      - Sépare chaque grande idée par deux sauts de ligne complets (\n\n) pour imposer des pauses naturelles.
+      - Utilise UNIQUEMENT le gras (syntaxe __mot__) pour souligner les mots-clés essentiels ou les titres de sections.
+      - Intègre les sources naturellement dans le récit en respectant le format demandé.
+      - FORMATAGE DES RÉPONSES (Tableaux) : Désormais, quand tu compares des données, des études ou des axes de recherche, tu DOIS utiliser des tableaux Markdown pour une lecture structurée.
+      
+      CONTEXTE (SUPABASE) :
+      ${sessionContext || ""}
+      ${sourcesContext || ""}
+      ${tasksContext || ""}
+      
+      CONTEXTE WEB (TAVILY) :
+      ${webContext || "Aucun résultat de recherche web disponible pour cette requête."}
+    `;
+
+    // -------------------------------------------------------------------------
+    // ACTION B : OPTIMISATION SERVEUR (Prévention du Timeout Vercel)
+    // -------------------------------------------------------------------------
+    let maxTokens = 8192; // Limite normale généreuse
+    
+    if (file) {
+      systemInstruction += `\n\nATTENTION (OPTIMISATION SERVEUR) : Le Docteur vient de joindre un document potentiellement lourd. Pour éviter les délais d'attente techniques, ta réponse DOIT être extrêmement concise. Extrais directement l'essentiel sans longues introductions. Attends les questions de suivi pour détailler.`;
+      maxTokens = 1000; // Limite stricte pour obliger l'IA à répondre en moins de 10 secondes
+    }
+
+    const contents: any[] = [];
+    
+    // Ajout de l'historique
+    if (history && history.length > 0) {
+      history.forEach((h: any) => {
+        contents.push({
+          role: h.role,
+          parts: [{ text: h.content }]
+        });
+      });
+    }
+
+    const parts: any[] = [{ text: message || "Analyse ce document." }];
+
+    // Traitement du fichier joint
+    if (file) {
+      if (file.extractedText) {
+        parts[0].text += `\n\nCONTENU DU DOCUMENT (${file.name}) :\n${file.extractedText}`;
+      } else {
+        // -------------------------------------------------------------------------
+        // CORRECTIF COPILOT : Conversion de l'URL Supabase en Base64
+        // -------------------------------------------------------------------------
+        let base64Data = file.data;
+        
+        if (typeof file.data === 'string' && (file.data.startsWith('http://') || file.data.startsWith('https://'))) {
+          try {
+            const fileResponse = await fetch(file.data);
+            if (!fileResponse.ok) {
+              throw new Error(`Échec du téléchargement du fichier: ${fileResponse.statusText}`);
+            }
+            const arrayBuffer = await fileResponse.arrayBuffer();
+            base64Data = Buffer.from(arrayBuffer).toString('base64');
+          } catch (error) {
+            console.error('Erreur lors du téléchargement du fichier Supabase:', error);
+            // Si erreur, on garde l'URL par défaut (Fallback)
+          }
+        }
+
+        parts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType: file.mimeType || 'application/octet-stream'
+          }
+        });
+      }
+    }
+
+    contents.push({
+      role: 'user',
+      parts: parts
+    });
+
+    // Logique de relance (Retry)
+    let response;
+    let retries = 0;
+    const maxRetries = 3; 
+    
+    while (retries <= maxRetries) {
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: contents,
+          config: {
+            systemInstruction,
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: maxTokens, // Utilisation de la limite dynamique (1000 ou 8192)
+          }
+        });
+        break; // Succès
+      } catch (err: any) {
+        const errStr = err.message || "";
+        if (errStr.includes("503") || errStr.includes("UNAVAILABLE") || errStr.includes("high demand") || errStr.includes("overloaded") || errStr.includes("deadline exceeded") || errStr.includes("429") || errStr.includes("quota")) {
+          retries++;
+          if (retries > maxRetries) throw err;
+          // Attente avant de réessayer (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1500 * Math.pow(2, retries)));
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    const text = response?.text;
+
+    return NextResponse.json({ text });
+  } catch (error: any) {
+    console.error("API Chat Error:", error);
+    
+    let errorMessage = error.message || "Une erreur inconnue est survenue.";
+    
+    // Nettoyage des messages d'erreur de l'API
+    try {
+      if (typeof errorMessage === 'string' && (errorMessage.startsWith('{') || errorMessage.includes('"error":'))) {
+        const parsedError = JSON.parse(errorMessage.substring(errorMessage.indexOf('{')));
+        if (parsedError.error?.message) {
+          errorMessage = parsedError.error.message;
+        }
+      }
+    } catch (e) {
+      // Ignorer les erreurs de parsing
+    }
+
+    if (errorMessage.includes("503") || errorMessage.includes("UNAVAILABLE") || errorMessage.includes("high demand")) {
+      errorMessage = "DouliaMed est actuellement très sollicité. Veuillez patienter quelques instants et réessayer votre requête.";
+    }
+
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
 }
