@@ -1,66 +1,63 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
+// Configuration obligatoire pour Next.js 15 sur Vercel Free
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30; // Augmente la durée autorisée sur Vercel Pro si besoin
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { message, history, sessionContext, sourcesContext, webContext, file } = body;
+    const { message, history, sessionContext, sourcesContext, tasksContext, webContext, file } = await req.json();
 
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "Clé API manquante dans l'environnement." }, { status: 500 });
+       return NextResponse.json({ error: "Clé API manquante." }, { status: 500 });
     }
 
-    // 1. Initialisation Gemini 3 Flash
     const genAI = new GoogleGenerativeAI(apiKey);
+    
+    // On utilise 1.5-flash : c'est le plus rapide pour éviter les Timeouts sur ton plan Free
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash", // Plus stable pour éviter les Timeouts, change en "gemini-3-flash-preview" si tu as l'accès confirmé
-      systemInstruction: `TU ES DOULIAMED. Réponds en français. Pas d'astérisques (*). Utilise __gras__. 
-      CONTEXTE SUPABASE: ${sourcesContext || ""}
-      CONTEXTE WEB: ${webContext || ""}
-      ${sessionContext || ""}`
+      model: "gemini-1.5-flash", 
+      systemInstruction: `TU ES DOULIAMED. Ton : Expert et Académique. 
+      Règles : Pas d'astérisques (*), utilise __gras__. 
+      Contexte : ${sourcesContext || ""} ${webContext || ""}`
     });
 
-    // 2. Préparation des messages
     const contents: any[] = [];
     if (history) {
-      history.forEach((h: any) => contents.push({
-        role: h.role === 'user' ? 'user' : 'model',
-        parts: [{ text: h.content }]
-      }));
+      history.forEach((h: any) => {
+        contents.push({
+          role: h.role === 'user' ? 'user' : 'model',
+          parts: [{ text: h.content }]
+        });
+      });
     }
 
     const userParts: any[] = [{ text: message || "Analyse ce document." }];
 
-    // 3. Gestion ultra-rapide des fichiers
     if (file) {
       if (file.extractedText) {
-        userParts[0].text += `\n\nDOC: ${file.extractedText.substring(0, 5000)}`;
+        userParts[0].text += `\n\nCONTENU DU DOCUMENT :\n${file.extractedText.substring(0, 4000)}`;
       } else if (file.data) {
+        // Extraction propre du Base64
         const base64Data = file.data.includes(',') ? file.data.split(',')[1] : file.data;
-        userParts.push({ inlineData: { data: base64Data, mimeType: file.mimeType || 'application/pdf' } });
+        userParts.push({
+          inlineData: { data: base64Data, mimeType: file.mimeType || 'application/pdf' }
+        });
       }
     }
 
     contents.push({ role: 'user', parts: userParts });
 
-    // 4. Appel avec limite de temps
     const result = await model.generateContent({
       contents,
-      generationConfig: { maxOutputTokens: 1000, temperature: 0.5 }
+      generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
     });
 
     return NextResponse.json({ text: result.response.text() });
 
   } catch (error: any) {
-    console.error("ERREUR DOULIAMED:", error);
-    // On renvoie l'erreur réelle pour comprendre le blocage
-    return NextResponse.json(
-      { error: `Erreur Technique: ${error.message}` },
-      { status: 500 }
-    );
+    console.error("DouliaMed Error:", error);
+    return NextResponse.json({ error: "Erreur technique : " + error.message }, { status: 500 });
   }
 }
